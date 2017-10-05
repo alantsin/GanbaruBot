@@ -13,7 +13,71 @@ name_array = Array.new # Used to keep track of names to prevent command spam
 
 last_used = '0' # Prevent solo scouts in succession
 
-bot.command :solo, description: '[Bot-Commands] Does a solo scout with every card in the box. Non-subs must wait for someone else to solo first before they can solo again' do |event|
+not_using = true # Prevents concurrent use of !card
+
+bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
+
+	if event.channel.name == 'team-building-help'
+
+		if not_using
+		
+			puts 'Not using'
+		
+			if id.to_i.is_a? Integer
+			
+				puts 'Integer'
+			
+				if !special_card(id)
+				
+					puts 'Not special'
+			
+					
+						not_using = false
+
+						openurl(id)
+						
+						# Upload image and delete
+						event.channel.send_file File.new('resized' + $card_id + '.png')
+						File.delete($card_id + '.png') # Delete original
+						File.delete('resized' + $card_id + '.png') # Delete resized
+						
+						# Output card data
+						event.respond($markdown_array[0])
+						event.respond($markdown_array[1])
+						
+						event.send_temp('Getting data...', 1)
+						sleep(1)
+						
+						event.respond($markdown_array[2])
+						event.send_temp('Getting data...', 1)
+						sleep(1)
+						
+						event.respond($markdown_array[3] + $markdown_array[4])
+						
+						event.send_temp('Taking a nap...', 5)
+						looking_up = false
+						puts ''
+					
+					
+				else
+					event.respond('Not a valid card number...')
+					looking_up = false
+					
+				end
+				
+			else
+				event.respond('Not a valid card number...')
+				looking_up = false
+				
+			end
+			
+		end
+	
+	end
+	
+end
+
+bot.command :solo, description: '[Bot-Commands] Does a solo scout with every card in the box. Non-subs must wait for someone else to solo first before they can solo again' do |event, type|
 
 	if event.channel.name == 'bot-commands'
 	
@@ -35,8 +99,15 @@ bot.command :solo, description: '[Bot-Commands] Does a solo scout with every car
 			end
 			
 		end
+		
+		last_used = event.user.id
+		
+		puts type.nil?
+		if type.nil?
+			type = ''
+		end
 	
-		number = scout().to_s
+		number = scout(type.downcase).to_s
 		url = "http://schoolido.lu/api/cards/#{number}/"
 		obj = JSON.parse(open(url).read)
 		image = obj['round_card_image'].to_s
@@ -44,7 +115,7 @@ bot.command :solo, description: '[Bot-Commands] Does a solo scout with every car
 		IO.copy_stream(download, number + '.png')
 		
 		resized_image = MiniMagick::Image.open(number + '.png')
-		resized_image.resize '75x75'
+		resized_image.resize '100x100'
 		resized_image.format 'png'
 		resized_image.write 'resized' + number + '.png'
 		
@@ -52,8 +123,7 @@ bot.command :solo, description: '[Bot-Commands] Does a solo scout with every car
 		
 		File.delete(number + '.png') # Delete original
 		File.delete('resized' + number + '.png') # Delete resized
-		
-		last_used = event.user.id 
+		 
 		puts '' # To prevent returning text in the Discord chat
 		
 	end

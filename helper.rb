@@ -1,19 +1,234 @@
-# Helper method to determine card id
-def scout()
-	
-	rarity = rand(1..100)
-	puts rarity
-	
-	case rarity # Choose box based on rarity
+# Helper method to make the table look nice
+def spacing(s)
+	case s.length
 	
 	when 1
-		card_pool = $ur_array
-	when 2..5
-		card_pool = $ssr_array
-	when 6..20
-		card_pool = $sr_array
+		return s + '    '
+	when 2
+		return s + '   '
+	when 3
+		return s + '  '
+	when 4
+		return s + ' '
 	else
+		return s + ''
+	end
+end
+
+# Helper method to display the data nicely
+
+def markdown_card()
+
+	# Start by getting skill type
+	
+	if $card_skill_array.nil?
+		
+		$center_skill = nil
+		puts 'N card has no skill'
+		
+	else
+	
+		$center_skill = $parsed_content.css('div.description')[1].inner_text
+	
+		url = 'http://schoolido.lu/api/cards/' + $card_id
+		obj = JSON.parse(open(url).read)
+		skill_obj = obj['skill'].to_s
+		skill_details_obj = obj['skill_details'].to_s # Split with ','
+		skill_details = skill_details_obj.split(',')
+		
+		case skill_obj # Refactor for new skill types later
+		
+		when 'Healer'
+			benefit = 'HP Recovery'
+
+		when 'Perfect Lock'
+			benefit = 'Seconds of Perfect Lock'
+			
+		else # 'Score Up'
+			benefit = 'Score Increase'
+				
+		end
+	
+	end
+	
+	#Save Card Thumbnail, Idolized
+	
+	image = obj['round_card_idolized_image'].to_s
+	download = open("https:#{image}")
+	IO.copy_stream(download, $card_id + '.png')
+		
+	resized_image = MiniMagick::Image.open($card_id + '.png')
+	resized_image.resize '100x100'
+	resized_image.format 'png'
+	resized_image.write 'resized' + $card_id + '.png'
+	
+	# Prepare data
+	
+	skill_level = Array.new(8)
+	i = 0
+	
+	while i < 8
+		skill_level[i] = $card_skill_array[i].split(',')
+		skill_level[i][0] = skill_level[i][0].gsub(/[^\d,\.]/, '')
+		skill_level[i][1] = spacing(skill_level[i][1].to_i.to_s.gsub(/[^\d,\.]/, ''))
+		i += 1
+	end
+	
+	avg_array = Array.new(8)
+	
+	abs_array = Array.new(8)
+	
+	i = 0
+	
+	case skill_obj
+
+	when 'Score Up'
+	
+		while i < 8
+			avg_array[i] = spacing((2.5 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+			abs_array[i] = spacing((2.5 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+			i += 1
+		end
+		
+	when 'Healer'
+		
+		while i < 8
+			avg_array[i] = spacing((480 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+			abs_array[i] = spacing((480 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+			i += 1
+		end
+
+	else 
+	
+		while i < 8
+			avg_array[i] = '0'
+			abs_array[i] = '0'
+			i += 1
+		end
+		
+	end
+	
+	# Make strings for output
+	
+	$markdown_array = Array.new(5)
+	
+	max_stats = $card_level_array[$card_level_array.length - 2].split(',')
+	
+	$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** #{$center_skill}"
+	
+	$markdown_array[1] = "```scala\nStats at max level #{$card_max_level}:\nSmile: #{max_stats[0].gsub(/\D/, '')}\nPure: #{max_stats[1].gsub(/\D/, '')}\nCool: #{max_stats[2].gsub(/\D/, '')}\n```"
+	
+	$markdown_array[2] = "**Skill Data:** #{skill_details[0]}, there is a *p* chance of *n* #{benefit}"
+	
+	$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  | Avg | Abs |\n===============================\n"
+	
+	i = 0
+	$markdown_array[4] = ''
+	
+	while i < 8
+		$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|#{avg_array[i]}|#{abs_array[i]}|\n"
+		i += 1
+	end
+	
+	$markdown_array[4] = $markdown_array[4] + "```"
+
+	return
+	
+end
+
+# Helper method to open the url to the data
+def openurl(card)
+
+	document = open('https://sif.kirara.ca/card/' + card)
+	content = document.read
+	$parsed_content = Nokogiri::HTML(content)
+	data = $parsed_content.css('script').children.first.inner_text.split(':') # Now a string
+	extract_data(data)
+	
+end
+
+# Helper method to extract data from the url into global variables
+def extract_data(data)
+
+	$card_id = data[0].gsub(/\D/, '') # Use $card_id to upload image
+	
+	$card_max_level = data[2].gsub(/\D/, '')
+	
+	$card_max_bond = data[3].gsub(/\D/, '')
+	
+	$card_level_array = data[5].split('],')
+	#puts $card_level_array[0] # Level 1
+	#puts $card_level_array[$card_level_array.length - 2] # Max level
+	
+	if data[4].include? 'null'
+		$card_skill_array = nil
+		
+	else
+	
+		$card_skill_array = data[6].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
+		
+	end
+	
+	markdown_card()
+		
+end
+
+# Helper method to determine card id
+def scout(type)
+
+	puts type
+	
+	case type
+	
+	when 'ur'
+		card_pool = $ur_array
+		
+	when 'ssr'
+		card_pool = $ssr_array
+		
+	when 'sr'
+		card_pool = $sr_array
+		
+	when 'r'
 		card_pool = $r_array
+		
+	when 'n'
+		card_pool = $n_array
+		
+	when 'blue'
+	
+		rarity = rand(1..5)
+		puts rarity
+		
+		case rarity
+		
+		when 1
+			card_pool = $ur_array
+		else
+			card_pool = $sr_array
+		end
+		
+	else
+	
+		rarity = rand(1..100)
+		puts rarity
+		
+		case rarity # Choose box based on rarity
+		
+		when 1
+			card_pool = $ur_array
+		
+		when 2..5
+			card_pool = $ssr_array
+			
+		when 6..20
+			card_pool = $sr_array
+			
+		else
+			card_pool = $r_array
+			
+		end
+		
 	end
 	
 	bad_card = true
@@ -42,7 +257,7 @@ def special_card(id)
 
 	case id
 	
-	when 83, 146..148, 379..390, 629, 837..839, 1022, 1047, 1048, 1054, 1070, 1083, 1136, 1166
+	when 83, 146..148, 379..390, 629, 837..839, 1022, 1047, 1048, 1054, 1070, 1083, 1136, 1166, 90, 107, 162, 182, 1317..1320
 		puts true
 		return true
 	else
