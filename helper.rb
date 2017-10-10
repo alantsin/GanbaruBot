@@ -19,12 +19,14 @@ end
 
 def markdown_card()
 
+	url = 'http://schoolido.lu/api/cards/' + $card_id
+	obj = JSON.parse(open(url).read)
+
 	# Start by getting skill type
 	
 	if $card_skill_array.nil?
 		
 		$center_skill = nil
-		puts 'N card has no skill'
 		
 	else
 	
@@ -67,43 +69,61 @@ def markdown_card()
 	skill_level = Array.new(8)
 	i = 0
 	
-	while i < 8
-		skill_level[i] = $card_skill_array[i].split(',')
-		skill_level[i][0] = skill_level[i][0].gsub(/[^\d,\.]/, '')
-		skill_level[i][1] = spacing(skill_level[i][1].to_i.to_s.gsub(/[^\d,\.]/, ''))
-		i += 1
-	end
+	if !$card_skill_array.nil?
 	
-	avg_array = Array.new(8)
+		if skill_obj == 'Perfect Lock'
+		
+			while i < 8
+				skill_level[i] = $card_skill_array[i].split(',')
+				skill_level[i][0] = skill_level[i][0].gsub(/[^\d,\.]/, '')
+				skill_level[i][1] = spacing(skill_level[i][2].to_s.gsub(/[^\d,\.]/, ''))
+				i += 1
+				
+			end
+		
+		else
 	
-	abs_array = Array.new(8)
-	
-	i = 0
-	
-	case skill_obj
-
-	when 'Score Up'
-	
-		while i < 8
-			avg_array[i] = spacing((2.5 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
-			abs_array[i] = spacing((2.5 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
-			i += 1
+			while i < 8
+				skill_level[i] = $card_skill_array[i].split(',')
+				skill_level[i][0] = skill_level[i][0].gsub(/[^\d,\.]/, '')
+				skill_level[i][1] = spacing(skill_level[i][1].to_i.to_s.gsub(/[^\d,\.]/, ''))
+				i += 1
+			end
+			
 		end
 		
-	when 'Healer'
+		avg_array = Array.new(8)
 		
-		while i < 8
-			avg_array[i] = spacing((480 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
-			abs_array[i] = spacing((480 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
-			i += 1
-		end
-
-	else 
+		abs_array = Array.new(8)
+		
+		i = 0
 	
-		while i < 8
-			avg_array[i] = '0'
-			abs_array[i] = '0'
-			i += 1
+		case skill_obj
+
+		when 'Score Up'
+		
+			while i < 8
+				avg_array[i] = spacing((2.5 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+				abs_array[i] = spacing((2.5 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+				i += 1
+			end
+			
+		when 'Healer'
+			
+			while i < 8
+				avg_array[i] = spacing((480 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+				abs_array[i] = spacing((480 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+				i += 1
+			end
+
+		else 
+		
+			while i < 8
+				avg_array[i] = spacing('0')
+				abs_array[i] = spacing('0')
+				i += 1
+			end
+			
 		end
 		
 	end
@@ -114,23 +134,39 @@ def markdown_card()
 	
 	max_stats = $card_level_array[$card_level_array.length - 2].split(',')
 	
-	$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** #{$center_skill}"
+	$markdown_array[1] = "```scala\nStats at max level #{$card_max_level}:\nSmile: #{max_stats[0].gsub(/\D/, '')}\nPure:  #{max_stats[1].gsub(/\D/, '')}\nCool:  #{max_stats[2].gsub(/\D/, '')}\n```"
 	
-	$markdown_array[1] = "```scala\nStats at max level #{$card_max_level}:\nSmile: #{max_stats[0].gsub(/\D/, '')}\nPure: #{max_stats[1].gsub(/\D/, '')}\nCool: #{max_stats[2].gsub(/\D/, '')}\n```"
+	if $center_skill.nil?
+		
+		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** N/A"
+		
+		$markdown_array[2] = "**Skill Data:** N/A\n"
+		
+		$markdown_array[3] = ''
+		
+		$markdown_array[4] = ''
+		
+	else
 	
-	$markdown_array[2] = "**Skill Data:** #{skill_details[0]}, there is a *p* chance of *n* #{benefit}"
+		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** #{$center_skill}"
+		
+		$markdown_array[2] = "**Skill Data:** #{skill_details[0]}, there is a *p* chance of *n* #{benefit}"
+		
+		$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  | Avg | Abs |\n===============================\n"
 	
-	$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  | Avg | Abs |\n===============================\n"
+		i = 0
+		$markdown_array[4] = ''
 	
-	i = 0
-	$markdown_array[4] = ''
+		while i < 8
+		
+			$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|#{avg_array[i]}|#{abs_array[i]}|\n"
+			i += 1
+			
+		end
 	
-	while i < 8
-		$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|#{avg_array[i]}|#{abs_array[i]}|\n"
-		i += 1
+		$markdown_array[4] = $markdown_array[4] + "```"
+	
 	end
-	
-	$markdown_array[4] = $markdown_array[4] + "```"
 
 	return
 	

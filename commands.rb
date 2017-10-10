@@ -7,7 +7,7 @@ require 'uri'
 
 require_relative 'helper'
 
-bot = Discordrb::Commands::CommandBot.new token: 'MzYwMTA2NTA1ODM3NjA4OTYy.DKQ-pQ.f4366wTDaRzs2vJa0qdH5Fvb_AI', client_id: 360106505837608962, prefix: '!'
+bot = Discordrb::Commands::CommandBot.new token: '0' #TOKEN HERE, client_id: 0 #CLIENT_ID HERE, prefix: '!'
 
 name_array = Array.new # Used to keep track of names to prevent command spam
 
@@ -15,59 +15,89 @@ last_used = '0' # Prevent solo scouts in succession
 
 not_using = true # Prevents concurrent use of !card
 
+$card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] # Gets total card count
+
 bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
 
-	if event.channel.name == 'team-building-help'
+	if event.channel.name == 'umitest'
 
 		if not_using
 		
-			puts 'Not using'
+			id = id.to_i
 		
-			if id.to_i.is_a? Integer
+			if id.is_a? Integer
 			
-				puts 'Integer'
+				if (id >= 1 && id <= $card_count)
 			
-				if !special_card(id)
+					if !special_card(id)
+					
+							begin
 				
-					puts 'Not special'
-			
-					
-						not_using = false
+								not_using = false
 
-						openurl(id)
+								openurl(id)
+								
+								# Upload image and delete
+								event.channel.send_file File.new('resized' + $card_id + '.png')
+								File.delete($card_id + '.png') # Delete original
+								File.delete('resized' + $card_id + '.png') # Delete resized
+								
+								sleep(0.5)
+								
+								# Output card data
+								event.respond($markdown_array[0])
+								sleep(1)
+								
+								event.respond($markdown_array[1])
+								sleep(0.5)
+								
+								event.send_temp('Getting data...', 1)
+								sleep(1)
+								
+								event.respond($markdown_array[2])
+								
+								if !$center_skill.nil?
+								
+									event.send_temp('Getting data...', 1)
+									sleep(1)
+								
+									event.respond($markdown_array[3] + $markdown_array[4])
+									event.send_temp('Taking a nap...', 5)
+									sleep(5)
+									
+								end
+								
+								looking_up = false
+								not_using = true
+								puts ''
+								
+							rescue
+							
+								looking_up = false
+								not_using = true
+								
+							end
 						
-						# Upload image and delete
-						event.channel.send_file File.new('resized' + $card_id + '.png')
-						File.delete($card_id + '.png') # Delete original
-						File.delete('resized' + $card_id + '.png') # Delete resized
 						
-						# Output card data
-						event.respond($markdown_array[0])
-						event.respond($markdown_array[1])
-						
-						event.send_temp('Getting data...', 1)
-						sleep(1)
-						
-						event.respond($markdown_array[2])
-						event.send_temp('Getting data...', 1)
-						sleep(1)
-						
-						event.respond($markdown_array[3] + $markdown_array[4])
-						
-						event.send_temp('Taking a nap...', 5)
-						looking_up = false
-						puts ''
+					else
 					
+						looking_up = false
+						event.respond('Not a valid card number...')
+						
+					end
 					
 				else
-					event.respond('Not a valid card number...')
+				
 					looking_up = false
+					event.respond('Not a valid card number...')
 					
 				end
 				
+				
 			else
-				event.respond('Not a valid card number...')
+			
 				looking_up = false
+				event.respond('Not a valid card number...')
 				
 			end
 			
