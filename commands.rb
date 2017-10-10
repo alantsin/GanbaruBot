@@ -7,11 +7,13 @@ require 'uri'
 
 require_relative 'helper'
 
-# Replace bot_token and bot_client_id with your own
-bot_token = '0'
-bot_client_id = 0
+# Replace TOKEN_VALUE and CLIENT_ID_VALUE with your own
 
-bot = Discordrb::Commands::CommandBot.new token: bot_token, client_id: bot_client_id, prefix: '!'
+TOKEN_VALUE = '0'
+
+CLIENT_ID_VALUE = 0
+
+bot = Discordrb::Commands::CommandBot.new token: TOKEN_VALUE, client_id: CLIENT_ID_VALUE, prefix: '!'
 
 name_array = Array.new # Used to keep track of names to prevent command spam
 
@@ -31,7 +33,7 @@ bot.command :card, description: "[Team-Building-Help] Returns data on a card wit
 		
 			if id.is_a? Integer
 			
-				if (id >= 1 && id <= $)
+				if (id >= 1 && id <= $card_count)
 			
 					if !special_card(id)
 					

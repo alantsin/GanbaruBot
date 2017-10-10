@@ -15,10 +15,15 @@ GEM
     ffi (1.9.18-x64-mingw32)
     http-cookie (1.0.3)
       domain_name (~> 0.5)
+    json (2.0.4)
     mime-types (3.1)
       mime-types-data (~> 3.2015)
     mime-types-data (3.2016.0521)
+    mini_magick (4.8.0)
+    mini_portile2 (2.3.0)
     netrc (0.11.0)
+    nokogiri (1.8.1-x64-mingw32)
+      mini_portile2 (~> 2.3.0)
     opus-ruby (1.0.1)
       ffi
     rbnacl (3.4.0)
@@ -41,6 +46,9 @@ PLATFORMS
 
 DEPENDENCIES
   discordrb
+  json
+  mini_magick
+  nokogiri
 
 BUNDLED WITH
    1.15.4
