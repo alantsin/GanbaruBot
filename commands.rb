@@ -2,14 +2,12 @@ require 'discordrb'
 require 'json'
 require 'mini_magick'
 require 'nokogiri'
-require 'open-uri'
-require 'uri'
 
 require_relative 'helper'
 
 # Replace TOKEN_VALUE and CLIENT_ID_VALUE with your own
 
-TOKEN_VALUE = '0'
+TOKEN_VALUE = 0
 
 CLIENT_ID_VALUE = 0
 
@@ -25,7 +23,7 @@ $card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] #
 
 bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
 
-	if event.channel.name == 'umitest'
+	if event.channel.name == 'team-building-help'
 
 		if not_using
 		
@@ -40,6 +38,8 @@ bot.command :card, description: "[Team-Building-Help] Returns data on a card wit
 							begin
 				
 								not_using = false
+								
+								id = id.to_s
 
 								openurl(id)
 								
@@ -50,37 +50,28 @@ bot.command :card, description: "[Team-Building-Help] Returns data on a card wit
 								
 								sleep(0.5)
 								
-								# Output card data
-								event.respond($markdown_array[0])
-								sleep(1)
-								
-								event.respond($markdown_array[1])
-								sleep(0.5)
-								
-								event.send_temp('Getting data...', 1)
-								sleep(1)
-								
-								event.respond($markdown_array[2])
-								
 								if !$center_skill.nil?
+									event.respond($markdown_array[0] + $markdown_array[1] + $markdown_array[2] + $markdown_array[3] + $markdown_array[4])
+									event.send_temp('Taking a nap...', 3)
 								
-									event.send_temp('Getting data...', 1)
-									sleep(1)
-								
-									event.respond($markdown_array[3] + $markdown_array[4])
-									event.send_temp('Taking a nap...', 5)
-									sleep(5)
+								else
+									event.respond($markdown_array[0] + $markdown_array[1] + $markdown_array[2])
+									event.send_temp('Taking a nap...', 3)
 									
 								end
 								
+								sleep(3)
+								
 								looking_up = false
 								not_using = true
+								
 								puts ''
 								
 							rescue
 							
 								looking_up = false
 								not_using = true
+								puts ''
 								
 							end
 						

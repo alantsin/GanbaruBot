@@ -46,8 +46,17 @@ def markdown_card()
 		when 'Perfect Lock'
 			benefit = 'Seconds of Perfect Lock'
 			
-		else # 'Score Up'
-			benefit = 'Score Increase'
+		else #Check for specific skills
+		
+			if skill_obj.include? 'Yell'
+				benefit = 'HP Recovery'
+				
+			elsif skill_obj.include? 'Trick'
+				benefit = 'Seconds of Semi-Perfect Lock'
+			
+			else
+				benefit = 'Score Increase'
+			end
 				
 		end
 	
@@ -98,9 +107,9 @@ def markdown_card()
 		
 		i = 0
 	
-		case skill_obj
+		case benefit
 
-		when 'Score Up'
+		when 'Score Increase'
 		
 			while i < 8
 				avg_array[i] = spacing((2.5 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
@@ -108,7 +117,7 @@ def markdown_card()
 				i += 1
 			end
 			
-		when 'Healer'
+		when 'HP Recovery'
 			
 			while i < 8
 				avg_array[i] = spacing((480 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
@@ -134,11 +143,11 @@ def markdown_card()
 	
 	max_stats = $card_level_array[$card_level_array.length - 2].split(',')
 	
-	$markdown_array[1] = "```scala\nStats at max level #{$card_max_level}:\nSmile: #{max_stats[0].gsub(/\D/, '')}\nPure:  #{max_stats[1].gsub(/\D/, '')}\nCool:  #{max_stats[2].gsub(/\D/, '')}\n```"
+	$markdown_array[1] = "```scala\nStats at max level #{$card_max_level}:\nSmile: #{max_stats[0].gsub(/\D/, '')}\nPure:  #{max_stats[1].gsub(/\D/, '')}\nCool:  #{max_stats[2].gsub(/\D/, '')}\n```\n"
 	
 	if $center_skill.nil?
 		
-		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** N/A"
+		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** N/A\n"
 		
 		$markdown_array[2] = "**Skill Data:** N/A\n"
 		
@@ -148,9 +157,9 @@ def markdown_card()
 		
 	else
 	
-		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** #{$center_skill}"
+		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** #{$center_skill}\n"
 		
-		$markdown_array[2] = "**Skill Data:** #{skill_details[0]}, there is a *p* chance of *n* #{benefit}"
+		$markdown_array[2] = "**Skill Data:** #{skill_details[0]}, there is a *p* chance of *n* #{benefit}\n"
 		
 		$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  | Avg | Abs |\n===============================\n"
 	

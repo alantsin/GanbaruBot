@@ -2,32 +2,148 @@ require 'discordrb'
 require 'json'
 require 'mini_magick'
 require 'nokogiri'
-require 'open-uri'
-require 'uri'
 
 require_relative 'helper'
 
-bot = Discordrb::Commands::CommandBot.new token: 'MzYwMTA2NTA1ODM3NjA4OTYy.DKQ-pQ.f4366wTDaRzs2vJa0qdH5Fvb_AI', client_id: 360106505837608962, prefix: '!'
+# Replace TOKEN_VALUE and CLIENT_ID_VALUE with your own
+
+TOKEN_VALUE = 'MzYwMTA2NTA1ODM3NjA4OTYy.DKQ-pQ.f4366wTDaRzs2vJa0qdH5Fvb_AI'
+
+CLIENT_ID_VALUE = 360106505837608962
+
+bot = Discordrb::Commands::CommandBot.new token: TOKEN_VALUE, client_id: CLIENT_ID_VALUE, prefix: '!'
 
 name_array = Array.new # Used to keep track of names to prevent command spam
 
 last_used = '0' # Prevent solo scouts in succession
 
-bot.command :solo, description: '[Bot-Commands] Does a solo scout with every card in the box. Non-subs must wait for someone else to solo first before they can solo again' do |event|
+not_using = true # Prevents concurrent use of !card
 
-	if event.channel.name == 'bot-commands'
-	
-		if event.user.roles[0].name != 'Untoasted Subs'
+$card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] # Gets total card count
 
-			if last_used == event.user.id # Non-subs cannot solo in succession
-				event.user.pm('G-give someone else a chance first...')
-				return
+bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
+
+	if event.channel.name == 'umitest'
+
+		if not_using
+		
+			id = id.to_i
+		
+			if id.is_a? Integer
+			
+				if (id >= 1 && id <= $card_count)
+			
+					if !special_card(id)
+					
+							begin
+				
+								not_using = false
+								
+								puts 'begin'
+
+								openurl(id)
+								
+								# Upload image and delete
+								event.channel.send_file File.new('resized' + $card_id + '.png')
+								File.delete($card_id + '.png') # Delete original
+								File.delete('resized' + $card_id + '.png') # Delete resized
+								
+								sleep(0.5)
+								
+								# Output card data
+								event.respond($markdown_array[0])
+								sleep(1)
+								
+								event.respond($markdown_array[1])
+								sleep(0.5)
+								
+								event.send_temp('Getting data...', 1)
+								sleep(1)
+								
+								event.respond($markdown_array[2])
+								
+								if !$center_skill.nil?
+								
+									event.send_temp('Getting data...', 1)
+									sleep(1)
+								
+									event.respond($markdown_array[3] + $markdown_array[4])
+									event.send_temp('Taking a nap...', 5)
+									sleep(5)
+									
+								end
+								
+								looking_up = false
+								not_using = true
+								puts ''
+								
+							rescue
+							
+								looking_up = false
+								not_using = true
+								
+							end
+						
+						
+					else
+					
+						looking_up = false
+						event.respond('Not a valid card number...')
+						
+					end
+					
+				else
+				
+					looking_up = false
+					event.respond('Not a valid card number...')
+					
+				end
+				
+				
+			else
+			
+				looking_up = false
+				event.respond('Not a valid card number...')
 				
 			end
 			
 		end
 	
-		number = scout().to_s
+	end
+	
+end
+
+bot.command :solo, description: '[Bot-Commands] Does a solo scout with every card in the box. Non-subs must wait for someone else to solo first before they can solo again' do |event, type|
+
+	if event.channel.name == 'bot-commands'
+	
+		if event.user.roles[0].nil?
+
+				if last_used == event.user.id # Non-subs cannot solo in succession
+					event.user.pm('G-give someone else a chance first...')
+					return
+					
+				end
+
+			
+		elsif event.user.roles[0].name != 'Untoasted Subs'
+		
+			if last_used == event.user.id # Non-subs cannot solo in succession
+					event.user.pm('G-give someone else a chance first...')
+					return
+					
+			end
+			
+		end
+		
+		last_used = event.user.id
+		
+		puts type.nil?
+		if type.nil?
+			type = ''
+		end
+	
+		number = scout(type.downcase).to_s
 		url = "http://schoolido.lu/api/cards/#{number}/"
 		obj = JSON.parse(open(url).read)
 		image = obj['round_card_image'].to_s
@@ -35,7 +151,7 @@ bot.command :solo, description: '[Bot-Commands] Does a solo scout with every car
 		IO.copy_stream(download, number + '.png')
 		
 		resized_image = MiniMagick::Image.open(number + '.png')
-		resized_image.resize '75x75'
+		resized_image.resize '100x100'
 		resized_image.format 'png'
 		resized_image.write 'resized' + number + '.png'
 		
@@ -43,8 +159,7 @@ bot.command :solo, description: '[Bot-Commands] Does a solo scout with every car
 		
 		File.delete(number + '.png') # Delete original
 		File.delete('resized' + number + '.png') # Delete resized
-		
-		last_used = event.user.id 
+		 
 		puts '' # To prevent returning text in the Discord chat
 		
 	end
