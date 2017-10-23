@@ -7,7 +7,7 @@ require_relative 'helper'
 
 # Replace TOKEN_VALUE and CLIENT_ID_VALUE with your own
 
-TOKEN_VALUE = 0
+TOKEN_VALUE = '0'
 
 CLIENT_ID_VALUE = 0
 
@@ -21,7 +21,7 @@ not_using = true # Prevents concurrent use of !card
 
 $card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] # Gets total card count
 
-bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
+bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card` *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
 
 	if event.channel.name == 'team-building-help'
 
@@ -165,25 +165,42 @@ bot.command :emote, description: '[Sub] [Global] Posts your custom image in the 
 	end
 	
 	begin
-		if event.user.roles[0].name == 'Untoasted Subs'
 		
-			begin
-				path = Dir.pwd + '/emojis/' + event.user.id.to_s + '/'
-				
-				Dir.chdir(path) do
-					if file_count(path)
-						name = Dir.glob(image_type(path))[0].to_s
-						event.channel.send_file File.new(name)
-					else
-						puts false
+		if event.user.roles.length > 0
+			$i = 0
+			$is_sub = false
+			
+			while $i < event.user.roles.length
+				if event.user.roles[$i].name == 'Untoasted Subs'
+					$is_sub = true
+				end
+				$i += 1
+			end
+			
+			if $is_sub
+		
+				begin
+					path = Dir.pwd + '/emojis/' + event.user.id.to_s + '/'
+					
+					Dir.chdir(path) do
+						if file_count(path)
+							name = Dir.glob(image_type(path))[0].to_s
+							event.channel.send_file File.new(name)
+						else
+							puts false
+						end
 					end
+					
+				rescue
+					puts 'User has no image saved'
+					event.respond 'Y-you haven\'t saved an image yet...'
+					
 				end
 				
-			rescue
-				puts 'User has no image saved'
-				event.respond 'Y-you haven\'t saved an image yet...'
-				
-			end
+			else
+				event.respond 'S-subscriber only feature for now...'
+			
+			end	
 			
 		else
 			event.respond 'S-subscriber only feature for now...'
@@ -204,51 +221,67 @@ bot.command :save, description: '[Sub] [Bot-Commands] Saves an image for your pe
 	
 		begin
 		
-			if event.user.roles[0].name == 'Untoasted Subs'
-
-			# Make a folder for that particular user if one doesn't exist
-				unless File.directory?("emojis/#{event.user.id.to_s}")
-					Dir.mkdir("emojis/#{event.user.id.to_s}")
+			if event.user.roles.length > 0
+				$i = 0
+				$is_sub = false
+			
+				while $i < event.user.roles.length
+					if event.user.roles[$i].name == 'Untoasted Subs'
+						$is_sub = true
+					end
+					$i += 1
 				end
-		 
-				begin
+				
+				if $is_sub
 
-				# Save an image
-					if is_image(link) # Check if link is supported format
-						
-						path = Dir.pwd + '/emojis/' + event.user.id.to_s + '/'
+				# Make a folder for that particular user if one doesn't exist
+					unless File.directory?("emojis/#{event.user.id.to_s}")
+						Dir.mkdir("emojis/#{event.user.id.to_s}")
+					end
+			 
+					begin
+
+					# Save an image
+						if is_image(link) # Check if link is supported format
 							
-						if file_count(path) < 1 # If no saved images, save the image
-							download = open(link)
-							extension = link[link.length - 4, link.length]
-							#puts 'image' + extension
-							IO.copy_stream(download, path + 'image' + extension, 9000000)
-							
-							begin
-								event.channel.send_file File.new(path + 'image' + extension)
-								event.respond 'Saved as custom image...'
+							path = Dir.pwd + '/emojis/' + event.user.id.to_s + '/'
 								
-							rescue
-								FileUtils.rm_rf Dir.glob(path)
-								event.respond 'Y-your image was too large. Try a different one...'
+							if file_count(path) < 1 # If no saved images, save the image
+								download = open(link)
+								extension = link[link.length - 4, link.length]
+								#puts 'image' + extension
+								IO.copy_stream(download, path + 'image' + extension, 9000000)
+								
+								begin
+									event.channel.send_file File.new(path + 'image' + extension)
+									event.respond 'Saved as custom image...'
+									
+								rescue
+									FileUtils.rm_rf Dir.glob(path)
+									event.respond 'Y-your image was too large. Try a different one...'
+									
+								end
+								
+							else
+								event.respond 'Y-you can only save 1 image... To delete your current one, type \"!delete"'
 								
 							end
-							
+								
 						else
-							event.respond 'Y-you can only save 1 image... To delete your current one, type \"!delete"'
-							
+							puts 'No link or invalid link'
+							event.respond 'O-only supported Discord image types please... (.jpg, .png, .gif)'
 						end
-							
-					else
+						
+					rescue
 						puts 'No link or invalid link'
 						event.respond 'O-only supported Discord image types please... (.jpg, .png, .gif)'
+						
 					end
 					
-				rescue
-					puts 'No link or invalid link'
-					event.respond 'O-only supported Discord image types please... (.jpg, .png, .gif)'
-					
-				end
+				else
+					event.respond 'S-subscriber only feature for now...'
+			
+				end	
 			
 			else
 				event.respond 'S-subscriber only feature for now...'
@@ -271,39 +304,55 @@ bot.command :delete, description: '[Sub] [Bot-Commands] Deletes your currently s
 	
 		begin
 		
-			if event.user.roles[0].name == 'Untoasted Subs'
+			if event.user.roles.length > 0
+				$i = 0
+				$is_sub = false
 			
-			# Make a folder for that particular user if one doesn't exist
-				unless File.directory?("emojis/#{event.user.id.to_s}")
-					Dir.mkdir("emojis/#{event.user.id.to_s}")
+				while $i < event.user.roles.length
+					if event.user.roles[$i].name == 'Untoasted Subs'
+						$is_sub = true
+					end
+					$i += 1
 				end
 				
-				begin
-				
-					path = Dir.pwd + '/emojis/' + event.user.id.to_s + '/'
-				
-				# Delete saved image if there is one
-					Dir.chdir(path) do
+				if $is_sub
+			
+				# Make a folder for that particular user if one doesn't exist
+					unless File.directory?("emojis/#{event.user.id.to_s}")
+						Dir.mkdir("emojis/#{event.user.id.to_s}")
+					end
 					
-						if file_count(path) > 0
-							FileUtils.rm_rf Dir.glob(path)
-							event.respond 'Saved image d-deleted...'
-							
-						else
-							event.respond 'N-nothing to delete...'
+					begin
+					
+						path = Dir.pwd + '/emojis/' + event.user.id.to_s + '/'
+					
+					# Delete saved image if there is one
+						Dir.chdir(path) do
+						
+							if file_count(path) > 0
+								FileUtils.rm_rf Dir.glob(path)
+								event.respond 'Saved image d-deleted...'
+								
+							else
+								event.respond 'N-nothing to delete...'
+								
+							end
 							
 						end
-						
+					
+					rescue
+						puts 'Nothing to delete'
+						event.respond 'N-nothing to delete...'
 					end
 				
-				rescue
-					puts 'Nothing to delete'
-					event.respond 'N-nothing to delete...'
-				end
-				
+				else
+					event.respond 'S-subscriber only feature for now...'
+			
+				end	
+					
 			else
 				event.respond 'S-subscriber only feature for now...'
-				
+					
 			end
 			
 		rescue
