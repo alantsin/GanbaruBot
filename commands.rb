@@ -11,6 +11,14 @@ TOKEN_VALUE = '0'
 
 CLIENT_ID_VALUE = 0
 
+# Test channel id used for debugging and dumping information
+
+test_channel = 0
+
+# Default role id used to assign members when they join
+
+default_role = 0
+
 bot = Discordrb::Commands::CommandBot.new token: TOKEN_VALUE, client_id: CLIENT_ID_VALUE, prefix: '!'
 
 name_array = Array.new # Used to keep track of names to prevent command spam
@@ -21,9 +29,60 @@ not_using = true # Prevents concurrent use of !card
 
 $card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] # Gets total card count
 
+# Command to update all members to the dah role
+
+#bot.command :test do |event|
+#	i = 0
+#	while i < event.server.members.length
+#		event.server.members[i].add_role(default_role)
+#		event.respond("Added " + event.server.members[i].name + " to dah role")
+#		sleep(1)
+#		i += 1
+#	end
+#end
+
+bot.member_join do |event|
+	puts event.user.username + " has joined"
+	event.user.add_role(default_role)
+	bot.send_message(test_channel, event.user.username + " has joined and became a dahDUM")
+end
+
+bot.member_leave do |event|
+	puts event.user.username + " has left"
+	bot.send_message(test_channel, event.user.username + " has left and became a :dahUMD:")
+end
+
+bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
+	if event.user.roles[0].nil?
+		event.user.add_role(default_role)
+		
+	else
+	
+		i = 0
+		dah = false
+		
+		while i < event.user.roles.length
+		
+			if event.user.roles[i].name == 'dah'
+				dah = true
+			end
+			i += 1
+			
+		end
+		
+		if dah
+			event.respond("Y-you're already a dah...")
+		else
+			event.user.add_role(default_role)
+		end
+		
+	end
+	
+end
+
 bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card` *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
 
-	if event.channel.name == 'team-building-help'
+	if event.channel.name == 'team-building-help' || event.channel.name == 'umitest'
 
 		if not_using
 		
