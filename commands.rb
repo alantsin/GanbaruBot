@@ -7,7 +7,7 @@ require_relative 'helper'
 
 # Replace TOKEN_VALUE and CLIENT_ID_VALUE with your own
 
-TOKEN_VALUE = '0'
+TOKEN_VALUE = 'MzYwMTA2NTA1ODM3NjA4OTYy.DNTssA.bHYEPXcWvMm41PMslvECLWfG8nQ'
 
 CLIENT_ID_VALUE = 0
 
@@ -19,6 +19,8 @@ test_channel = 0
 
 default_role = 0
 
+# Exclude this user id: 188081906586222603
+
 bot = Discordrb::Commands::CommandBot.new token: TOKEN_VALUE, client_id: CLIENT_ID_VALUE, prefix: '!'
 
 name_array = Array.new # Used to keep track of names to prevent command spam
@@ -27,24 +29,29 @@ last_used = '0' # Prevent solo scouts in succession
 
 not_using = true # Prevents concurrent use of !card
 
+get_cards()
+
 $card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] # Gets total card count
 
 # Command to update all members to the dah role
 
-#bot.command :test do |event|
-#	i = 0
-#	while i < event.server.members.length
-#		event.server.members[i].add_role(default_role)
-#		event.respond("Added " + event.server.members[i].name + " to dah role")
-#		sleep(1)
-#		i += 1
-#	end
+#bot.command :update do |event|
+	#i = 0
+	#while i < event.server.members.length
+		#event.server.members[i].add_role(default_role)
+		#event.respond("Added " + event.server.members[i].name + " to dah role")
+		#event.respond(event.server.members[i].id)
+		#sleep(1)
+		#i += 1
+	#end
 #end
 
 bot.member_join do |event|
 	puts event.user.username + " has joined"
-	event.user.add_role(default_role)
-	bot.send_message(test_channel, event.user.username + " has joined and became a dahDUM")
+	if (event.user.id != 188081906586222603)
+		event.user.add_role(default_role)
+		bot.send_message(test_channel, event.user.username + " has joined and became a dahDUM")
+	end
 end
 
 bot.member_leave do |event|
@@ -53,27 +60,34 @@ bot.member_leave do |event|
 end
 
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
-	if event.user.roles[0].nil?
-		event.user.add_role(default_role)
-		
-	else
-	
-		i = 0
-		dah = false
-		
-		while i < event.user.roles.length
-		
-			if event.user.roles[i].name == 'dah'
-				dah = true
-			end
-			i += 1
-			
-		end
-		
-		if dah
-			event.respond("Y-you're already a dah...")
-		else
+	if event.channel.name == 'bot-commands'
+
+		if (event.user.id == 188081906586222603)
+			event.channel.send_file File.new("emojis\\" + "Pierrot.png")
+
+		elsif event.user.roles[0].nil?
 			event.user.add_role(default_role)
+			
+		else
+		
+			i = 0
+			dah = false
+			
+			while i < event.user.roles.length
+			
+				if event.user.roles[i].name == 'dah'
+					dah = true
+				end
+				i += 1
+				
+			end
+			
+			if dah
+				event.respond("Y-you're already a dah...")
+			else
+				event.user.add_role(default_role)
+			end
+			
 		end
 		
 	end
@@ -165,52 +179,58 @@ end
 
 bot.command :solo, description: '[Bot-Commands] Does a solo scout with every card in the box. Non-subs must wait for someone else to solo first before they can solo again' do |event, type|
 
-	if event.channel.name == 'bot-commands'
+	if event.channel.name == 'bot-commands' || event.channel.name == 'umitest'
 	
-		if event.user.roles[0].nil?
-
-				if last_used == event.user.id # Non-subs cannot solo in succession
-					event.user.pm('G-give someone else a chance first...')
-					return
-					
-				end
-
+	if event.user.roles.length > 0
+	
+		$i = 0
+		$not_sub = true
 			
-		elsif event.user.roles[0].name != 'Untoasted Subs'
+		while $i < event.user.roles.length
 		
-			if last_used == event.user.id # Non-subs cannot solo in succession
-					event.user.pm('G-give someone else a chance first...')
-					return
-					
+			if event.user.roles[$i].name == 'Untoasted Subs'
+				$not_sub = false
 			end
+			$i += 1
 			
 		end
 		
-		last_used = event.user.id
+	end
+				
+	if $not_sub
 		
-		puts type.nil?
-		if type.nil?
-			type = ''
+		if last_used == event.user.id # Non-subs cannot solo in succession
+				event.user.pm('G-give someone else a chance first...')
+				return		
 		end
+				
+	end
+		
+	last_used = event.user.id
+		
+	puts type.nil?
+	if type.nil?
+		type = ''
+	end
 	
-		number = scout(type.downcase).to_s
-		url = "http://schoolido.lu/api/cards/#{number}/"
-		obj = JSON.parse(open(url).read)
-		image = obj['round_card_image'].to_s
-		download = open("https:#{image}")
-		IO.copy_stream(download, number + '.png')
+	number = scout(type.downcase).to_s
+	url = "http://schoolido.lu/api/cards/#{number}/"
+	obj = JSON.parse(open(url).read)
+	image = obj['round_card_image'].to_s
+	download = open("https:#{image}")
+	IO.copy_stream(download, number + '.png')
 		
-		resized_image = MiniMagick::Image.open(number + '.png')
-		resized_image.resize '100x100'
-		resized_image.format 'png'
-		resized_image.write 'resized' + number + '.png'
+	resized_image = MiniMagick::Image.open(number + '.png')
+	resized_image.resize '100x100'
+	resized_image.format 'png'
+	resized_image.write 'resized' + number + '.png'
 		
-		event.channel.send_file File.new('resized' + number + '.png')
+	event.channel.send_file File.new('resized' + number + '.png')
 		
-		File.delete(number + '.png') # Delete original
-		File.delete('resized' + number + '.png') # Delete resized
+	File.delete(number + '.png') # Delete original
+	File.delete('resized' + number + '.png') # Delete resized
 		 
-		puts '' # To prevent returning text in the Discord chat
+	puts '' # To prevent returning text in the Discord chat
 		
 	end
 	
@@ -431,6 +451,7 @@ bot.command :huge, description: '[Global] HUGE EMOJI' do |event, hugemoji|
 		info = hugemoji.split(':')
 		prefix = 'https://cdn.discordapp.com/emojis/'
 		suffix = info[2].gsub(/[>]/, '.png')
+
 		image = prefix + suffix
 		download = open(image)
 		IO.copy_stream(download, "emojis\\#{download.base_uri.to_s.split('/')[-1]}")
@@ -471,7 +492,5 @@ bot.command :countdown, description: '[Co-op-Room] A 3-second countdown to help 
 	end
   
 end
-
-get_cards()
 
 bot.run
