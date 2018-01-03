@@ -4,20 +4,7 @@ require 'mini_magick'
 require 'nokogiri'
 
 require_relative 'helper'
-
-# Replace TOKEN_VALUE and CLIENT_ID_VALUE with your own
-
-TOKEN_VALUE = 'MzYwMTA2NTA1ODM3NjA4OTYy.DNTssA.bHYEPXcWvMm41PMslvECLWfG8nQ'
-
-CLIENT_ID_VALUE = 0
-
-# Test channel id used for debugging and dumping information
-
-test_channel = 0
-
-# Default role id used to assign members when they join
-
-default_role = 0
+require_relative 'TOKENS'
 
 # Exclude this user id: 188081906586222603
 
@@ -35,28 +22,26 @@ $card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] #
 
 # Command to update all members to the dah role
 
-#bot.command :update do |event|
-	#i = 0
-	#while i < event.server.members.length
-		#event.server.members[i].add_role(default_role)
-		#event.respond("Added " + event.server.members[i].name + " to dah role")
-		#event.respond(event.server.members[i].id)
-		#sleep(1)
-		#i += 1
-	#end
-#end
+bot.command :update do |event|
+	i = 0
+	while i < event.server.members.length
+		event.server.members[i].add_role(DEFAULT_ROLE)
+		puts("Added " + event.server.members[i].name + " to dah role")
+		i += 1
+	end
+end
 
 bot.member_join do |event|
 	puts event.user.username + " has joined"
 	if (event.user.id != 188081906586222603)
-		event.user.add_role(default_role)
-		bot.send_message(test_channel, event.user.username + " has joined and became a dahDUM")
+		event.user.add_role(DEFAULT_ROLE)
+		bot.send_message(TEST_CHANNEL, event.user.username + " has joined and became a dahDUM")
 	end
 end
 
 bot.member_leave do |event|
 	puts event.user.username + " has left"
-	bot.send_message(test_channel, event.user.username + " has left and became a :dahUMD:")
+	bot.send_message(TEST_CHANNEL, event.user.username + " has left and became a :dahUMD:")
 end
 
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
@@ -66,7 +51,7 @@ bot.command :dah, description: "Command to request the dah role if not automatic
 			event.channel.send_file File.new("emojis\\" + "Pierrot.png")
 
 		elsif event.user.roles[0].nil?
-			event.user.add_role(default_role)
+			event.user.add_role(DEFAULT_ROLE)
 			
 		else
 		
@@ -85,7 +70,7 @@ bot.command :dah, description: "Command to request the dah role if not automatic
 			if dah
 				event.respond("Y-you're already a dah...")
 			else
-				event.user.add_role(default_role)
+				event.user.add_role(DEFAULT_ROLE)
 			end
 			
 		end
