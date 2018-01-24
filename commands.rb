@@ -6,8 +6,6 @@ require 'nokogiri'
 require_relative 'helper'
 require_relative 'TOKENS'
 
-# Exclude this user id: 188081906586222603
-
 bot = Discordrb::Commands::CommandBot.new token: TOKEN_VALUE, client_id: CLIENT_ID_VALUE, prefix: '!'
 
 name_array = Array.new # Used to keep track of names to prevent command spam
@@ -22,21 +20,20 @@ $card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] #
 
 # Command to update all members to the dah role
 
-bot.command :update do |event|
-	i = 0
-	while i < event.server.members.length
-		event.server.members[i].add_role(DEFAULT_ROLE)
-		puts("Added " + event.server.members[i].name + " to dah role")
-		i += 1
-	end
-end
+# bot.command :update do |event|
+	# i = 0
+	# while i < event.server.members.length
+		# event.server.members[i].add_role(DEFAULT_ROLE)
+		# puts("Added " + event.server.members[i].name + " to dah role")
+		# sleep(2)
+		# i += 1
+	# end
+# end
 
 bot.member_join do |event|
 	puts event.user.username + " has joined"
-	if (event.user.id != 188081906586222603)
 		event.user.add_role(DEFAULT_ROLE)
 		bot.send_message(TEST_CHANNEL, event.user.username + " has joined and became a dahDUM")
-	end
 end
 
 bot.member_leave do |event|
@@ -47,10 +44,7 @@ end
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
 	if event.channel.name == 'bot-commands'
 
-		if (event.user.id == 188081906586222603)
-			event.channel.send_file File.new("emojis\\" + "Pierrot.png")
-
-		elsif event.user.roles[0].nil?
+		if event.user.roles[0].nil?
 			event.user.add_role(DEFAULT_ROLE)
 			
 		else
