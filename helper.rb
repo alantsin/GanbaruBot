@@ -1,8 +1,3 @@
-# Helper method to create line graph
-def create_graph(calc_type, card1, card2)
-	
-end
-
 # Helper method to make the table look nice
 def spacing(s)
 	case s.length
@@ -307,7 +302,7 @@ def special_card(id)
 
 	case id
 	
-	when 83, 146..148, 206, 379..390, 629, 837..839, 1022, 1047, 1048, 1054, 1070, 1083, 1136, 1166, 90, 107, 162, 182, 1317..1320
+	when 83, 146..148, 206, 379..390, 629, 837..839, 1022, 1047, 1048, 1054, 1070, 1083, 1136, 1166, 90, 107, 162, 182, 1317..1320, 1330, 1340..1345, 1347, 1349..1351, 1360, 1371, 1373..1375, 1386, 1396, 1397, 1399, 1401..1403, 1413, 1415..1417, 1427, 1447, 1449..1451
 		puts true
 		return true
 	else
