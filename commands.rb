@@ -2,6 +2,7 @@ require 'discordrb'
 require 'json'
 require 'mini_magick'
 require 'nokogiri'
+require 'open-uri'
 
 require_relative 'helper'
 require_relative 'TOKENS'
@@ -470,6 +471,18 @@ bot.command :countdown, description: '[Co-op-Room] A 3-second countdown to help 
    
 	end
   
+end
+
+bot.command :test do |event, number|
+
+	url = 'https://schoolido.lu/api/cards/' + number + '/'
+	
+	puts url
+	
+	obj = JSON.parse(open(url).read)
+	
+	puts obj
+	
 end
 
 bot.run

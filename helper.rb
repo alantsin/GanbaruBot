@@ -19,7 +19,8 @@ end
 
 def markdown_card()
 
-	url = 'http://schoolido.lu/api/cards/' + $card_id
+	url = 'https://schoolido.lu/api/cards/' + $card_id + '/'
+	
 	obj = JSON.parse(open(url).read)
 
 	# Start by getting skill type
@@ -32,8 +33,6 @@ def markdown_card()
 	
 		$center_skill = $parsed_content.css('div.description')[1].inner_text
 	
-		url = 'http://schoolido.lu/api/cards/' + $card_id
-		obj = JSON.parse(open(url).read)
 		skill_obj = obj['skill'].to_s
 		skill_details_obj = obj['skill_details'].to_s # Split with ','
 		skill_details = skill_details_obj.split(',')
@@ -115,6 +114,7 @@ def markdown_card()
 				avg_array[i] = spacing((2.5 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
 				abs_array[i] = spacing((2.5 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
 				i += 1
+				puts avg_array[i]
 			end
 			
 		when 'HP Recovery'
@@ -202,9 +202,7 @@ def extract_data(data)
 	$card_max_bond = data[3].gsub(/\D/, '')
 	
 	$card_level_array = data[5].split('],')
-	#puts $card_level_array[0] # Level 1
-	#puts $card_level_array[$card_level_array.length - 2] # Max level
-	
+
 	if data[4].include? 'null'
 		$card_skill_array = nil
 		
@@ -303,10 +301,8 @@ def special_card(id)
 	case id
 	
 	when 83, 146..148, 206, 379..390, 629, 837..839, 1022, 1047, 1048, 1054, 1070, 1083, 1136, 1166, 90, 107, 162, 182, 1317..1320, 1330, 1340..1345, 1347, 1349..1351, 1360, 1371, 1373..1375, 1386, 1396, 1397, 1399, 1401..1403, 1413, 1415..1417, 1427, 1447, 1449..1451
-		puts true
 		return true
 	else
-		puts false
 		return false
 	end
 	
