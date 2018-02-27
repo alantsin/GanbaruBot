@@ -104,6 +104,14 @@ def markdown_card()
 		
 		abs_array = Array.new(8)
 		
+		sd_n1_array = Array.new(8)
+		
+		sd_1_array = Array.new(8)
+
+		sd_n2_array = Array.new(8)
+		
+		sd_2_array = Array.new(8)
+		
 		i = 0
 	
 		case benefit
@@ -113,8 +121,16 @@ def markdown_card()
 			while i < 8
 				avg_array[i] = spacing((2.5 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
 				abs_array[i] = spacing((2.5 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+				
+				np = skill_details[0].gsub(/[^\d,\.]/, '').to_i * skill_level[i][0].to_i * 0.01
+				sd = Math.sqrt(np * (1 - (skill_level[i][0].to_i * 0.01))).round(1)
+				
+				sd_n1_array[i] = spacing(((((np - sd) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 2.5 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				sd_1_array[i] = spacing(((((np + sd) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 2.5 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				sd_n2_array[i] = spacing(((((np - (2 * sd)) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 2.5 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				sd_2_array[i] = spacing(((((np + (2 * sd)) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 2.5 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				
 				i += 1
-				puts avg_array[i]
 			end
 			
 		when 'HP Recovery'
@@ -122,16 +138,20 @@ def markdown_card()
 			while i < 8
 				avg_array[i] = spacing((480 * skill_level[i][0].to_i * 0.01 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
 				abs_array[i] = spacing((480 * skill_level[i][1].to_i / skill_details[0].gsub(/[^\d,\.]/, '').to_f).round(1).to_s)
+				
+				np = skill_details[0].gsub(/[^\d,\.]/, '').to_i * skill_level[i][0].to_i * 0.01
+				sd = Math.sqrt(np * (1 - (skill_level[i][0].to_i * 0.01))).round(1)
+				
+				sd_n1_array[i] = spacing(((((np - sd) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 480 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				sd_1_array[i] = spacing(((((np + sd) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 480 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				sd_n2_array[i] = spacing(((((np - (2 * sd)) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 480 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				sd_2_array[i] = spacing(((((np + (2 * sd)) /  skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(3) * 480 * skill_level[i][1].to_i) / skill_details[0].gsub(/[^\d,\.]/, '').to_i).round(1).to_s)
+				
+				
 				i += 1
 			end
 
 		else 
-		
-			while i < 8
-				avg_array[i] = spacing('0')
-				abs_array[i] = spacing('0')
-				i += 1
-			end
 			
 		end
 		
@@ -161,16 +181,34 @@ def markdown_card()
 		
 		$markdown_array[2] = "**Skill Data:** #{skill_details[0]}, there is a *p* chance of *n* #{benefit}\n"
 		
-		$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  | Avg | Abs |\n===============================\n"
-	
 		i = 0
-		$markdown_array[4] = ''
-	
-		while i < 8
 		
-			$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|#{avg_array[i]}|#{abs_array[i]}|\n"
-			i += 1
+		if skill_obj == 'Perfect Lock'
+		
+			$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  |\n===================\n"
 			
+			$markdown_array[4] = ''
+	
+			while i < 8
+			
+				$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|\n"
+				i += 1
+				
+			end
+		
+		else
+		
+			$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  | Avg | Abs |Stat>| -1σ | +1σ | -2σ | +2σ |\n===========================================================\n"
+			
+			$markdown_array[4] = ''
+	
+			while i < 8
+		
+				$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|#{avg_array[i]}|#{abs_array[i]}|     |#{sd_n1_array[i]}|#{sd_1_array[i]}|#{sd_n2_array[i]}|#{sd_2_array[i]}|\n"
+				i += 1
+			
+			end
+		
 		end
 	
 		$markdown_array[4] = $markdown_array[4] + "```"
