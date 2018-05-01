@@ -8,6 +8,9 @@ end
 
 # Assigns roles to players
 def assign_roles()
+	# The original list of players unmodified
+	$mafia_players_ordered = $mafia_players.clone
+	# Shuffle the original list to assign roles
 	$mafia_players = $mafia_players.shuffle
 	i = 0
 	while i < $mafia_players.length
@@ -20,7 +23,7 @@ end
 def assign_roles_helper(i)
 	case i 
 	
-	when i = 1
+	when i = 0
 		role = Honoka.new
 		puts 'New Honoka created'
 	
@@ -28,7 +31,7 @@ def assign_roles_helper(i)
 		role = Eli.new
 		puts 'New Eli created'
 		
-	when i = 0
+	when i = 2
 		role = Kotori.new
 		puts 'New Kotori created'
 		
@@ -78,40 +81,77 @@ end
 
 # Lists the current players of the game
 def list_players()
-	$mafia_players = $mafia_players.shuffle
+
 	i = 0
-	player_list = 'Current Players: '
+	player_list = "Current Players: \n"
 	
-	while i < $mafia_players.length
-		player_list = player_list + "#{$mafia_players[i].name}, "
+	while i < $mafia_players_ordered.length
+	
+		if $mafia_players_ordered[i].alive
+			player_list = player_list + "Player #{i + 1} = #{$mafia_players_ordered[i].name}\n"
+		end
+		
 		i += 1
 	end
 
 	return player_list
 end
 
-# Helper function to determine if target is a player in the game
-def is_player(target)
-	# Check if target is in game
+# Check to progress to morning if every player has made their move
+def end_night()
+	
 	i = 0
 	while i < $mafia_players.length
-		if target == $mafia_players[i].player.name
-			return true
+		
+		if !$mafia_players[i].role.night_action
+			puts 'Waiting for others to make their move'
+			return
 		end
+		
 		i += 1
+		
 	end
 	
-	return false
+	$is_morning = true
+	
+end
+
+# Resets all players' night_action
+
+def reset_night_action()
+
+	i = 0
+	
+	while i < $mafia_players.length
+		$mafia_players[i].role.night_action = false
+		i += 1
+	end
+
+end
+
+# Resets all players' day_action_elect and day_action_vote
+
+def reset_day_action()
+
+	i = 0
+	
+	while i < $mafia_players.length
+		$mafia_players[i].role.day_action_elect = false
+		$mafia_players[i].role.day_action_vote = false
+		i += 1
+	end
+
 end
 
 # Base class for a player in Mafia
 class Player
 
-	attr_accessor :player, :name, :role
+	attr_accessor :player, :name, :alive, :role
 
 	def initialize(player)
 		@player = player
 		@name = player.name
+		@alive = true
 		@role = nil
 	end
 	
@@ -119,7 +159,7 @@ end
 
 class Honoka
 
-	@@help_text = "You are Honoka, the leader of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!honk <username>` otherwise you `!idle` to progress the game state. If you use it, and you are still in the game during the daytime, the player that you targeted will automatically be elected for the daily homework without requiring a majority vote.\nDuring the daytime, your `!elect` and `!vote` are also worth double. In the event of a tie, your nomination and vote will take precedent."
+	@@help_text = "You are Honoka, the leader of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!honk <Number>` otherwise you `!idle` to progress the game state. If you use it, and you are still in the game during the daytime, the player that you targeted will automatically be elected for the daily homework without requiring a majority vote.\nDuring the daytime, your `!elect` and `!vote` are also worth double. In the event of a tie, your nomination and vote will take precedent."
 	
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :honk_target
 
@@ -150,14 +190,14 @@ class Honoka
 	def idle()
 		@honk_target = nil
 		@night_action = true
-		puts 'You decide to do nothing tonight.'
+		return 'You decide to do nothing tonight.'
 	end
 
 end
 
 class Eli
 
-	@@help_text = "You are the President of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game.\nYou can `!assign <username>` each night, or `!idle` to assign homework to nobody. Whoever you target with `!assign` will be removed from the game unless Maki targets the same player that night.\nIf Kotori follows you and you `!assign` homework, she will remove you from the game! In a 6+ player game, Umi or Nozomi will take your place as President if they are still in the game when you are removed."
+	@@help_text = "You are the President of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game.\nYou can `!assign <Number>` each night, or `!idle` to assign homework to nobody. Whoever you target with `!assign` will be removed from the game unless Maki targets the same player that night.\nIf Kotori follows you and you `!assign` homework, she will remove you from the game! In a 6+ player game, Umi or Nozomi will take your place as President if they are still in the game when you are removed."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :assign_target
 
@@ -174,15 +214,29 @@ class Eli
 	end
 	
 	def assign(target)
-	
-		if is_player(target)
-			@assign_target = target
-			@night_action = true
-			return "You decide to assign homework to " + target
 		
+		if $is_morning
+			return 'You can only assign homework at night!'
+			
 		else
-			return 'Not a valid target.'
-		
+	
+			if $mafia_players_ordered[target - 1].alive
+			
+				if $mafia_players_ordered[target - 1].role.name == $president_name
+					return 'You cannot assign homework to yourself!'
+					
+				else
+					@assign_target = target
+					@night_action = true
+					return "You decide to assign homework to #{$mafia_players_ordered[target - 1].name}"
+					
+				end
+			
+			else
+				return 'Not a valid target.'
+			
+			end
+			
 		end
 		
 	end
@@ -197,7 +251,7 @@ end
 
 class Kotori
 
-	@@help_text = "You are Kotori, the Cop and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!follow <username>` each night. If you follow Eli and they assign homework that night, you will catch her during the day and remove her from the game."
+	@@help_text = "You are Kotori, the Cop and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!follow <Number>` each night. If you follow Eli and they assign homework that night, you will catch her during the day and remove her from the game."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :follow_target
 
@@ -214,15 +268,29 @@ class Kotori
 	end
 	
 	def follow(target)
-		
-		if is_player(target)
-			@follow_target = target
-			@night_action = true
-			return "You decide to follow " + target
-		
+	
+		if $is_morning
+			return 'You can only follow at night!'
+			
 		else
-			return 'Not a valid target.'
-		
+	
+			if $mafia_players_ordered[target - 1].alive
+			
+				if $mafia_players_ordered[target - 1].role.name == 'Kotori'
+					return 'You cannot follow yourself!'
+					
+				else
+					@follow_target = target
+					@night_action = true
+					return "You decide to follow #{$mafia_players_ordered[target - 1].name}"
+					
+				end
+			
+			else
+				return 'Not a valid target.'
+			
+			end
+			
 		end
 		
 	end
@@ -231,7 +299,7 @@ end
 
 class Maki
 
-	@@help_text = "You are Maki, the Tutor Doctor and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!help <username>` each night. You can't target the same player twice in a row. You can also target yourself. If your target is also targeted by `!assign` or `!shoot` in the same night, you will save that target from being removed from the game."
+	@@help_text = "You are Maki, the Tutor Doctor and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!help < Number>` each night. You can't target the same player twice in a row. You can also target yourself. If your target is also targeted by `!assign` or `!shoot` in the same night, you will save that target from being removed from the game."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :help_target, :last_helped
 
@@ -241,7 +309,7 @@ class Maki
 		@day_action_elect = false
 		@day_action_vote = false
 		@help_target = nil
-		@last_helped = ""
+		@last_helped = 0
 	end
 	
 	def help_text()
@@ -249,21 +317,27 @@ class Maki
 	end
 	
 	def help(target)
-		
-		if is_player(target)
-		
-			if target == @last_helped
-				return 'You cannot help the same player two nights in a row!'
-			else
-				@help_target = target
-				@last_helped = target
-				@night_action = true
-				return "You decide to help " + target
-			end
-		
+	
+		if $is_morning
+			return 'You can only help at night!'
+			
 		else
-			return 'Not a valid target.'
-		
+	
+			if $mafia_players_ordered[target - 1].alive
+			
+				if target == @last_helped
+					return 'You cannot help the same player two nights in a row!'
+				else
+					@help_target = target
+					@last_helped = target
+					@night_action = true
+					return "You decide to help #{$mafia_players_ordered[target - 1].name}"
+				end
+			
+			else
+				return 'Not a valid target.'			
+			end
+			
 		end
 		
 	end
@@ -292,21 +366,22 @@ class Rin
 		if @nyaa
 			@nyaa = false
 			@night_action = true
-			puts 'You decide to become a cat tonight.'
+			return 'You decide to become a cat tonight.'
 		else
-			puts "You already used your Nyaa this game. Do \"!idle\" to progress the game."
+			return "You already used your Nyaa this game. Do \"!idle\" to progress the game."
 		end
 	end
 	
 	def idle()
-		@honk_target = nil
 		@night_action = true
-		puts 'You decide to do nothing tonight.'
+		return 'You decide to do nothing tonight.'
 	end
 
 end
 
 class N_Card
+
+	@@help_text = "You are an N Card. You have no abilities that you can use. You must !idle` every night to progress the game state."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote
 
@@ -315,6 +390,11 @@ class N_Card
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
+	end
+	
+	def idle()
+		@night_action = true
+		return 'You decide to do nothing tonight.'
 	end
 
 end
