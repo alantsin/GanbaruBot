@@ -6,12 +6,13 @@ def mafia_init()
 	$max_players = 9
 end
 
+# Assigns roles to players
 def assign_roles()
 	$mafia_players = $mafia_players.shuffle
 	i = 0
 	while i < $mafia_players.length
 		$mafia_players[i].role = assign_roles_helper(i)
-		$mafia_players[i].player.pm("Hello, your role is " + $mafia_players[i].role.name + " this game! Direct message me \"!mafia help\" at night if you don't know what to do.")
+		$mafia_players[i].player.pm("Hello, your role is #{$mafia_players[i].role.name} this game! Direct message me \"!mafia help\" at night if you don't know what to do.")
 		i += 1
 	end
 end
@@ -19,29 +20,29 @@ end
 def assign_roles_helper(i)
 	case i 
 	
-	when i = 0
+	when i = 1
 		role = Honoka.new
-		puts "New Honoka created"
+		puts 'New Honoka created'
 	
 	when i = 1
 		role = Eli.new
-		puts "New Eli created"
+		puts 'New Eli created'
 		
-	when i = 2
+	when i = 0
 		role = Kotori.new
-		puts "New Kotori created"
+		puts 'New Kotori created'
 		
 	when i = 3
 		role = Maki.new
-		puts "New Maki created"
+		puts 'New Maki created'
 		
 	when i = 4
 		role = Rin.new
-		puts "New Rin created"
+		puts 'New Rin created'
 	
 	else
 		role = N_Card.new
-		puts "New N Card created"
+		puts 'New N Card created'
 		
 	end
 		
@@ -49,14 +50,57 @@ def assign_roles_helper(i)
 	
 end
 
-def mafia_start()
-	$mafia_night = 0
+# For displaying numbers correctly
+def ordinal(n)
+	case n
 	
+	when n = 1
+		return 'st'
+	
+	when n = 2
+		return 'nd'
+	
+	when n = 3
+		return 'rd'
+		
+	else
+		return 'th'
+	end
+	
+end
+
+# Increments the night count
+def mafia_night()
+	$is_morning = false
+	$mafia_night_counter += 1
+	$mafia_night = $mafia_night_counter.to_s + ordinal($mafia_night_counter)
+end
+
+# Lists the current players of the game
+def list_players()
+	$mafia_players = $mafia_players.shuffle
+	i = 0
+	player_list = 'Current Players: '
+	
+	while i < $mafia_players.length
+		player_list = player_list + "#{$mafia_players[i].name}, "
+		i += 1
+	end
+
+	return player_list
 end
 
 # Helper function to determine if target is a player in the game
 def is_player(target)
-
+	# Check if target is in game
+	i = 0
+	while i < $mafia_players.length
+		if target == $mafia_players[i].player.name
+			return true
+		end
+		i += 1
+	end
+	
 	return false
 end
 
@@ -80,7 +124,7 @@ class Honoka
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :honk_target
 
 	def initialize()
-		@name = "Honoka"
+		@name = 'Honoka'
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
@@ -106,7 +150,7 @@ class Honoka
 	def idle()
 		@honk_target = nil
 		@night_action = true
-		puts "You decide to do nothing tonight."
+		puts 'You decide to do nothing tonight.'
 	end
 
 end
@@ -118,7 +162,7 @@ class Eli
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :assign_target
 
 	def initialize()
-		@name = "Eli"
+		@name = $president_name
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
@@ -130,27 +174,35 @@ class Eli
 	end
 	
 	def assign(target)
-		@assign_target = target
-		@night_action = true
-		puts "You decide to assign homework to " + target
+	
+		if is_player(target)
+			@assign_target = target
+			@night_action = true
+			return "You decide to assign homework to " + target
+		
+		else
+			return 'Not a valid target.'
+		
+		end
+		
 	end
 	
 	def idle()
 		@assign_target = nil
 		@night_action = true
-		puts "Assigned homework to nobody tonight."
+		return 'You decided to assign homework to nobody tonight.'
 	end
 
 end
 
 class Kotori
 
-	@@help_text = "You are Kotori, the Cop and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!follow <username>` each night. If you follow Eli and they assign homework that night, you will catch her during the day and remove her from the game.\nIn a 7+ player game, Hanayo will know your identity when the game starts."
+	@@help_text = "You are Kotori, the Cop and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!follow <username>` each night. If you follow Eli and they assign homework that night, you will catch her during the day and remove her from the game."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :follow_target
 
 	def initialize()
-		@name = "Kotori"
+		@name = 'Kotori'
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
@@ -162,9 +214,17 @@ class Kotori
 	end
 	
 	def follow(target)
-		@follow_target = target
-		@night_action = true
-		puts "You decide to follow " + target
+		
+		if is_player(target)
+			@follow_target = target
+			@night_action = true
+			return "You decide to follow " + target
+		
+		else
+			return 'Not a valid target.'
+		
+		end
+		
 	end
 
 end
@@ -176,7 +236,7 @@ class Maki
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :help_target, :last_helped
 
 	def initialize()
-		@name = "Maki"
+		@name = 'Maki'
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
@@ -189,14 +249,23 @@ class Maki
 	end
 	
 	def help(target)
-		if target == @last_helped
-			puts "Cannot help the same person twice in a row"
+		
+		if is_player(target)
+		
+			if target == @last_helped
+				return 'You cannot help the same player two nights in a row!'
+			else
+				@help_target = target
+				@last_helped = target
+				@night_action = true
+				return "You decide to help " + target
+			end
+		
 		else
-			@help_target = target
-			@night_action = true
-			@last_helped = target
-			puts "You decide to help " + target
+			return 'Not a valid target.'
+		
 		end
+		
 	end
 
 end
@@ -208,7 +277,7 @@ class Rin
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :nyaa
 
 	def initialize()
-		@name = "Rin"
+		@name = 'Rin'
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
@@ -223,7 +292,7 @@ class Rin
 		if @nyaa
 			@nyaa = false
 			@night_action = true
-			puts "You decide to become a cat tonight."
+			puts 'You decide to become a cat tonight.'
 		else
 			puts "You already used your Nyaa this game. Do \"!idle\" to progress the game."
 		end
@@ -232,16 +301,17 @@ class Rin
 	def idle()
 		@honk_target = nil
 		@night_action = true
-		puts "You decide to do nothing tonight."
+		puts 'You decide to do nothing tonight.'
 	end
 
 end
 
 class N_Card
 
-	attr_accessor :night_action, :day_action_elect, :day_action_vote
+	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote
 
 	def initialize()
+		@name = 'N Card'
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
