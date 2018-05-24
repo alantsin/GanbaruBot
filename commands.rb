@@ -427,22 +427,24 @@ end
 # Posts the original size of a custom emoji
 bot.command :huge, description: '[Global] HUGE EMOJI' do |event, hugemoji|
 
-	begin
 		info = hugemoji.split(':')
 		prefix = 'https://cdn.discordapp.com/emojis/'
-		suffix = info[2].gsub(/[>]/, '.png')
-
+		suffix = info[2].gsub(/[>]/, '.gif')
 		image = prefix + suffix
+		puts image
+		
+		# Check if image is gif
+		if Net::HTTP.get_response(URI.parse(image)).code == '415'
+			suffix = info[2].gsub(/[>]/, '.png')
+			image = prefix + suffix
+			puts image
+		end
+
 		download = open(image)
 		IO.copy_stream(download, "emojis\\#{download.base_uri.to_s.split('/')[-1]}")
 		event.channel.send_file File.new("emojis\\" + suffix)
 		File.delete("emojis\\" + suffix)
 		puts '' # To prevent returning text in the Discord chat
-		
-	rescue
-		event.respond 'Custom emojis only...'
-		
-	end
 	
 end
 
@@ -471,18 +473,6 @@ bot.command :countdown, description: '[Co-op-Room] A 3-second countdown to help 
    
 	end
   
-end
-
-bot.command :test do |event, number|
-
-	url = 'https://schoolido.lu/api/cards/' + number + '/'
-	
-	puts url
-	
-	obj = JSON.parse(open(url).read)
-	
-	puts obj
-	
 end
 
 bot.run
