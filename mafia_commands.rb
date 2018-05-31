@@ -8,7 +8,7 @@ bot = Discordrb::Commands::CommandBot.new token: TOKEN_VALUE, client_id: CLIENT_
 mafia_init()
 
 # Command to start a game and join
-bot.command :test do |event, action|
+bot.command :mafia do |event, action|
 
 	action = action.downcase
 
@@ -24,13 +24,14 @@ bot.command :test do |event, action|
 			
 				if $mafia_players.length < $max_players
 					$mafia_players.push(Player.new(event.user))
-					
+					$current_players += 1
 					event.respond($mafia_players[$mafia_players.length - 1].player.pm($mafia_players[$mafia_players.length - 1].player.name + ' has joined as Player ' + $mafia_players.length.to_s))
 					
 					if $mafia_players.length >= 2
 					
 						if $join_ending
 							$join_ending = false
+							$active_game = true
 							puts 'Game starting in 10 seconds'
 							# Adjust sleep time
 							sleep(1)
@@ -51,6 +52,25 @@ bot.command :test do |event, action|
 								sleep(1) until $is_morning
 								event.respond('It is morning!')
 								sleep(1)
+								
+								# Do night actions here
+								event.respond(rin_cat())
+								sleep(1)
+								
+								event.respond(president_assign())
+								sleep(1)
+								if end_game()
+									event.respond($end_game_message)
+									return
+								end
+								
+								event.respond(kotori_follow())
+								sleep(1)
+								if end_game()
+									event.respond($end_game_message)
+									return
+								end
+								
 								# Do election stuff here
 								reset_day_action()
 								# Reset all players' night_action
@@ -72,23 +92,32 @@ bot.command :test do |event, action|
 		end
 	
 	when 'help'
-	
-		if event.channel.id == event.user.pm.id
-	
-			i = 0
-			
-			while i < $mafia_players.length
-				if event.user.id == $mafia_players[i].player.id
-					event.respond($mafia_players[i].role.help_text())
-					break
-				end
-				i += 1
-			end
 		
+		if event.channel.id == event.user.pm.id
+			
+			if $active_game
+		
+				i = 0
+					
+				while i < $mafia_players.length
+					if event.user.id == $mafia_players[i].player.id
+						event.respond($mafia_players[i].role.help_text())
+						break
+					end
+					i += 1
+				end
+				
+			else
+			
+				event.respond('No game active right now.')
+			
+			end
+			
 		end
 	
 	else
-		puts 'Invalid action'
+	
+		event.respond('Invalid action')
 		
 	end
 	
@@ -113,27 +142,45 @@ bot.command :idle do |event|
 	# Respond to command only in PM
 	if event.channel.id == event.user.pm.id
 	
-		i = 0
-		while i < $mafia_players.length
-			# Check if player is in game
-			if event.user.id == $mafia_players[i].player.id
-				# Check that player is a role that can't idle
-				if $mafia_players[i].role.name == 'Kotori' || $mafia_players[i].role.name == 'Maki' ||  $mafia_players[i].role.name == 'Hanayo' || $mafia_players[i].role.name == 'Nozomi'
-					event.respond('Your role cannot idle. You must do your role command')
-				else
-					event.respond($mafia_players[i].role.idle)
-					end_night()
+		if $active_game
+	
+			i = 0
+			while i < $mafia_players.length
+			
+				# Check if player is in game
+				if event.user.id == $mafia_players[i].player.id
+				
+					# Check if player is alive
+					if $mafia_players[i].alive
+					
+						# Check that player is a role that can't idle
+						if $mafia_players[i].role.name == 'Kotori' || $mafia_players[i].role.name == 'Maki' ||  $mafia_players[i].role.name == 'Hanayo' || $mafia_players[i].role.name == 'Nozomi'
+							event.respond('Your role cannot idle. You must do your role command')
+						else
+							event.respond($mafia_players[i].role.idle)
+							end_night()
+						end
+						
+						return
+						
+					else
+						event.respond('You have been assigned homework to do for the rest of the game!')
+						return
+					end
+					
 				end
 				
-				return
-				
+				i += 1
 			end
 			
-			i += 1
-		end
+			event.respond('You are not in the current game!')
+			return
+			
+		else
 		
-		event.respond('You are not in the current game!')
-		return
+			event.respond('No game active right now.')
+		
+		end
 	
 	end
 	
@@ -145,38 +192,58 @@ bot.command :assign do |event, target|
 	# Respond to command only in PM
 	if event.channel.id == event.user.pm.id
 	
-		i = 0
-		while i < $mafia_players.length
-			# Check if player is in game
-			if event.user.id == $mafia_players[i].player.id
-				# Check that player is President
-				if $mafia_players[i].role.name == $president_name
-					# Check that player number is valid
-					begin
-						target = target.to_i
-						if target > 0 && target <= $mafia_players_ordered.length
-							event.respond($mafia_players[i].role.assign(target))
-							# Insert function to check that everyone has finished their move, loop of role night actions
-						else
-							event.respond('Not a valid player number!')
-						end
-					rescue
-						event.respond('Something went wrong. Did you put an integer after your command?')
-					end
-					
-					return
-					
-				else
-					event.respond('That is not a valid action for your role!')
-					return
-				end
+		if $active_game
+	
+			i = 0
+			while i < $mafia_players.length
 			
+				# Check if player is in game
+				if event.user.id == $mafia_players[i].player.id
+				
+					# Check if player is alive
+					if $mafia_players[i].alive
+					
+						# Check that player is President
+						if $mafia_players[i].role.name == $president_name
+							# Check that player number is valid
+							begin
+								target = target.to_i
+								if target > 0 && target <= $mafia_players_ordered.length
+									event.respond($mafia_players[i].role.assign(target))
+									# Insert function to check that everyone has finished their move, loop of role night actions
+								else
+									event.respond('Not a valid player number!')
+								end
+							rescue
+								event.respond('Something went wrong. Did you put an integer after your command?')
+							end
+							
+							return
+							
+						else
+							event.respond('That is not a valid action for your role!')
+							return
+						end
+						
+					else
+					
+						event.respond('You have been assigned homework to do for the rest of the game!')
+						return
+					
+					end
+				
+				end
+				i += 1
 			end
-			i += 1
-		end
+			
+			event.respond('You are not in the current game!')
+			return
+			
+		else
 		
-		event.respond('You are not in the current game!')
-		return
+			event.respond('No game active right now.')
+		
+		end
 	
 	end
 
@@ -189,38 +256,58 @@ bot.command :follow do |event, target|
 	# Respond to command only in PM
 	if event.channel.id == event.user.pm.id
 	
-		i = 0
-		while i < $mafia_players.length
-			# Check if player is in game
-			if event.user.id == $mafia_players[i].player.id
-				# Check that player is President
-				if $mafia_players[i].role.name == $president_name
-					# Check that player number is valid
-					begin
-						target = target.to_i
-						if target > 0 && target <= $mafia_players_ordered.length
-							event.respond($mafia_players[i].role.follow(target))
-							# Insert function to check that everyone has finished their move, loop of role night actions
-						else
-							event.respond('Not a valid player number!')
-						end
-					rescue
-						event.respond('Something went wrong. Did you put an integer after your command?')
-					end
-					
-					return
-					
-				else
-					event.respond('That is not a valid action for your role!')
-					return
-				end
+		if $active_game
+	
+			i = 0
+			while i < $mafia_players.length
 			
+				# Check if player is in game
+				if event.user.id == $mafia_players[i].player.id
+				
+					# Check if player is alive
+					if $mafia_players[i].alive
+					
+						# Check that player is Kotori
+						if $mafia_players[i].role.name == 'Kotori'
+							# Check that player number is valid
+							begin
+								target = target.to_i
+								if target > 0 && target <= $mafia_players_ordered.length
+									event.respond($mafia_players[i].role.follow(target))
+									# Insert function to check that everyone has finished their move, loop of role night actions
+								else
+									event.respond('Not a valid player number!')
+								end
+							rescue
+								event.respond('Something went wrong. Did you put an integer after your command?')
+							end
+							
+							return
+							
+						else
+							event.respond('That is not a valid action for your role!')
+							return
+						end
+						
+					else
+					
+						event.respond('You have been assigned homework to do for the rest of the game!')
+						return
+					
+					end
+				
+				end
+				i += 1
 			end
-			i += 1
-		end
+			
+			event.respond('You are not in the current game!')
+			return
+			
+		else
 		
-		event.respond('You are not in the current game!')
-		return
+			event.respond('No game active right now.')
+		
+		end
 	
 	end
 
@@ -232,43 +319,62 @@ bot.command :help do |event, target|
 	# Respond to command only in PM
 	if event.channel.id == event.user.pm.id
 	
-		i = 0
-		while i < $mafia_players.length
-			# Check if player is in game
-			if event.user.id == $mafia_players[i].player.id
-				# Check that player is President
-				if $mafia_players[i].role.name == $president_name
-					# Check that player number is valid
-					begin
-						target = target.to_i
-						if target > 0 && target <= $mafia_players_ordered.length
-							event.respond($mafia_players[i].role.help(target))
-							# Insert function to check that everyone has finished their move, loop of role night actions
-						else
-							event.respond('Not a valid player number!')
-						end
-					rescue
-						event.respond('Something went wrong. Did you put an integer after your command?')
-					end
-					
-					return
-					
-				else
-					event.respond('That is not a valid action for your role!')
-					return
-				end
+		if $active_game
+	
+			i = 0
+			while i < $mafia_players.length
 			
+				# Check if player is in game
+				if event.user.id == $mafia_players[i].player.id
+				
+					# Check if player is alive
+					if $mafia_players[i].alive
+					
+						# Check that player is Maki
+						if $mafia_players[i].role.name == 'Maki'
+							# Check that player number is valid
+							begin
+								target = target.to_i
+								if target > 0 && target <= $mafia_players_ordered.length
+									event.respond($mafia_players[i].role.help(target))
+									# Insert function to check that everyone has finished their move, loop of role night actions
+								else
+									event.respond('Not a valid player number!')
+								end
+							rescue
+								event.respond('Something went wrong. Did you put an integer after your command?')
+							end
+							
+							return
+							
+						else
+							event.respond('That is not a valid action for your role!')
+							return
+						end
+						
+					else
+					
+						event.respond('You have been assigned homework to do for the rest of the game!')
+						return
+					
+					end
+				
+				end
+				i += 1
 			end
-			i += 1
-		end
+			
+			event.respond('You are not in the current game!')
+			return
+			
+		else
 		
-		event.respond('You are not in the current game!')
-		return
+			event.respond('No game active right now.')
+		
+		end
 	
 	end
 
 end
-
 
 
 bot.run
