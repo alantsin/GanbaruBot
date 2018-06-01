@@ -67,8 +67,6 @@ bot.command :mafia do |event, action|
 								sleep(1)
 								
 								# Do night actions here
-								event.respond(rin_cat())
-								sleep(1)
 								
 								event.respond(president_assign())
 								sleep(1)
@@ -87,51 +85,59 @@ bot.command :mafia do |event, action|
 								# Do election stuff here
 								reset_day_action()
 								sleep(1)
-								event.respond('It is now time to elect who will do the daily homework! Do `!elect <Number>` to elect that player, or `!elect 0` to abstain. If the majority of players abstain from electing, no one will be elected. Otherwise, the majority vote will decide. Ties will also result in no one being elected.')
-								sleep(1)
 								
-								event.respond(list_players())
-								sleep(1) until $everyone_elected
+								# Check for Honked
 								
-								event.respond('The results are in!')
-								sleep(1)
+								if honk()
 								
-								if majority_elected()
+									$elect_target_index == $current_honoka.honk_target - 1
+									$elect_target == $mafia_players_ordered[$elect_target_index]
 								
-									event.respond("The majority have decided to elect **#{$elect_target.name}**. #{$elect_target.name} has 30 seconds to explain why they shouldn't do the homework.")
-									# Sleep 30
-									sleep(1)
-									event.respond("It is time to vote! Do `!vote yes` or `!vote no` to decide the fate of #{$elect_target.name}...")
-									sleep(1) until $everyone_voted
+									event.respond("Honoka honked, and got everyone to elect **#{$elect_target.name}**. #{$elect_target.name} has 30 seconds to explain why they shouldn't do the homework.")
 									
-									# Put vote results here
-									event.respond('The people have decided...')
+								else
+								
+									event.respond('It is now time to elect who will do the daily homework! Do `!elect <Number>` to elect that player, or `!elect 0` to abstain. If the majority of players abstain from electing, no one will be elected. Otherwise, the majority vote will decide. Ties will also result in no one being elected.')
 									sleep(1)
-									if $vote_yes > $vote_no
-										
-										event.respond("**#{$elect_target.name} will do the daily homework!**\nVote Result: #{$vote_yes} Yes, #{$vote_no} No")
-										remove_player($elect_target_index)
-										sleep(1)
-										
-										if end_game()
-											event.respond($end_game_message)
-											break
-										end
+									
+									event.respond(list_players())
+									sleep(1) until $everyone_elected
+									
+									event.respond('The results are in!')
+									sleep(1)
+									
+									if majority_elected()
+									
+										event.respond("The majority have decided to elect **#{$elect_target.name}**. #{$elect_target.name} has 30 seconds to explain why they shouldn't do the homework.")
 									
 									else
 									
-										event.respond("**#{$elect_target.name} will NOT do the daily homework!**\nVote Result: #{$vote_yes} Yes, #{$vote_no} No")
+										event.respond('The majority could not decide who to elect!')
+										sleep(1)
+										reset_night_action()
+										next
 									
 									end
-									
-								else
-									event.respond('The majority could not decide who to elect!')
+								
 								end
 								
+								# Sleep 30
 								sleep(1)
+								$can_vote = true
+								event.respond("It is time to vote! Do `!vote yes` or `!vote no` to decide the fate of #{$elect_target.name}...")
+								sleep(1) until $everyone_voted
 								
-								# Reset all players' night_action
+								event.respond(vote_result())
+									
+								if end_game()
+									
+									event.respond($end_game_message)
+									break
+										
+								end
+								
 								reset_night_action()
+								
 							end
 							
 							mafia_init()
@@ -223,6 +229,14 @@ bot.command :mafia do |event, action|
 		else
 		
 			event.respond('No game active right now.')
+		
+		end
+		
+	when 'about'
+	
+		if event.channel.id == event.user.pm.id
+		
+			event.respond("Idol Mafia is a text-based Discord game based on the party game Mafia.\nThere are two teams, Team Idol and Team Student Council.\nIf you are on Team Idol, you win if you still in the game when all the members of Team Student Council are eliminated.\nIf you are on Team Student Council, you win if you eliminate all members of Team Idol, even if you have been eliminated.\n\nEach player is assigned a role and each role has unique abilities.\nA minimum of 5 players is required to start a game.\nIn a 5-player game, Honoka, Eli, Kotori, Maki, and Rin are in the game. Umi, Hanayo, Nozomi, and Nico will be a part of a 6, 7, 8 or 9 player game.\nEli, Umi, and Nozomi are part of Team Student Council, while the other girls are part of Team Idol.\nWork together with your team to eliminate the other team and claim victory!")
 		
 		end
 	
@@ -332,59 +346,65 @@ bot.command :elect do |event, target|
 	if event.channel.id != event.user.pm.id
 	
 		if $active_game
+			# Only allow elect in the morning
+			if $is_morning && !$can_vote
 	
-			i = 0
-			while i < $mafia_players.length
-			
-				# Check if player is in game
-				if event.user.id == $mafia_players[i].player.id
+				i = 0
+				while i < $mafia_players.length
 				
-					# Check if player is alive
-					if $mafia_players[i].alive
+					# Check if player is in game
+					if event.user.id == $mafia_players[i].player.id
 					
-						# Check if player has not elected yet
+						# Check if player is alive
+						if $mafia_players[i].alive
 						
-						if !$mafia_players[i].role.day_action_elect
-					
-							# Check that player number is valid
-							begin
-								target = target.to_i
-								if target >= 0 && target <= $mafia_players_ordered.length
+							# Check if player has not elected yet
+							
+							if !$mafia_players[i].role.day_action_elect
+						
+								# Check that player number is valid
+								begin
+									target = target.to_i
+									if target >= 0 && target <= $mafia_players_ordered.length
+											
+										event.respond($mafia_players[i].name + elect(target))
+										$mafia_players[i].role.day_action_elect = true
+										end_election()
 										
-									event.respond($mafia_players[i].name + elect(target))
-									$mafia_players[i].role.day_action_elect = true
-									end_election()
+									else
+										event.respond('Not a valid player number!')
+									end
 									
-								else
-									event.respond('Not a valid player number!')
+								rescue
+									event.respond('Integers only after your command!')
 								end
-								
-							rescue
-								event.respond('Integers only after your command!')
+							
+							else
+								event.respond('You have already elected today!')
 							end
-						
+							
+							return
+							
 						else
-							event.respond('You have already elected today!')
+						
+							event.respond('You have been assigned homework to do for the rest of the game!')
+							return
+							
 						end
-						
-						return
-						
-					else
-					
-						event.respond('You have been assigned homework to do for the rest of the game!')
-						return
 						
 					end
 					
+					i += 1
+					
 				end
 				
-				i += 1
+				event.respond('You are not in the current game!')
+				return
 				
+			else
+				event.respond('Now is not the time to elect!')
 			end
-			
-			event.respond('You are not in the current game!')
-			return
-			
+				
 		else
 			event.respond('No game active right now.')
 		end
@@ -400,38 +420,45 @@ bot.command :idle do |event|
 	if event.channel.id == event.user.pm.id
 	
 		if $active_game
+		
+			# Only allow vote in the morning
+			if $is_morning && $can_vote
 	
-			i = 0
-			while i < $mafia_players.length
-			
-				# Check if player is in game
-				if event.user.id == $mafia_players[i].player.id
+				i = 0
+				while i < $mafia_players.length
 				
-					# Check if player is alive
-					if $mafia_players[i].alive
+					# Check if player is in game
+					if event.user.id == $mafia_players[i].player.id
 					
-						# Check that player is a role that can't idle
-						if $mafia_players[i].role.name == 'Kotori' || $mafia_players[i].role.name == 'Maki' ||  $mafia_players[i].role.name == 'Hanayo' || $mafia_players[i].role.name == 'Nozomi'
-							event.respond('Your role cannot idle. You must do your role command')
+						# Check if player is alive
+						if $mafia_players[i].alive
+						
+							# Check that player is a role that can't idle
+							if $mafia_players[i].role.name == 'Kotori' || $mafia_players[i].role.name == 'Maki' ||  $mafia_players[i].role.name == 'Hanayo' || $mafia_players[i].role.name == 'Nozomi'
+								event.respond('Your role cannot idle. You must do your role command')
+							else
+								event.respond($mafia_players[i].role.idle)
+								end_night()
+							end
+							
+							return
+							
 						else
-							event.respond($mafia_players[i].role.idle)
-							end_night()
+							event.respond('You have been assigned homework to do for the rest of the game!')
+							return
 						end
 						
-						return
-						
-					else
-						event.respond('You have been assigned homework to do for the rest of the game!')
-						return
 					end
 					
+					i += 1
 				end
 				
-				i += 1
+				event.respond('You are not in the current game!')
+				return
+				
+			else
+				event.respond('Now is not the time to vote!')
 			end
-			
-			event.respond('You are not in the current game!')
-			return
 			
 		else
 		
@@ -507,7 +534,6 @@ bot.command :assign do |event, target|
 end
 
 # Command for Kotori to follow
-
 bot.command :follow do |event, target|
 	
 	# Respond to command only in PM
@@ -531,7 +557,7 @@ bot.command :follow do |event, target|
 								target = target.to_i
 								if target > 0 && target <= $mafia_players_ordered.length
 									event.respond($mafia_players[i].role.follow(target))
-									# Insert function to check that everyone has finished their move, loop of role night actions
+									end_night()
 								else
 									event.respond('Not a valid player number!')
 								end
@@ -594,7 +620,7 @@ bot.command :help do |event, target|
 								target = target.to_i
 								if target > 0 && target <= $mafia_players_ordered.length
 									event.respond($mafia_players[i].role.help(target))
-									# Insert function to check that everyone has finished their move, loop of role night actions
+									end_night()
 								else
 									event.respond('Not a valid player number!')
 								end
@@ -632,6 +658,5 @@ bot.command :help do |event, target|
 	end
 
 end
-
 
 bot.run
