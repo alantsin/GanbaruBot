@@ -1,11 +1,23 @@
 # Initializes variables for Mafia game
 def mafia_init()
+
 	$mafia_players = Array.new
 	$active_game = false
 	$can_join = true
 	$join_ending = true
 	$max_players = 9
 	$current_players = 0
+	$abstain_count = 0
+	
+	$is_morning = false
+	
+	$everyone_elected = false
+	$everyone_voted = false
+	$elect_tie = true
+	$can_vote = false
+	$vote_yes = 0
+	$vote_no = 0
+	
 	$end_game_message = ''
 	
 	# Pointers to current players
@@ -14,13 +26,17 @@ def mafia_init()
 	$current_kotori = nil
 	$current_maki = nil
 	$current_rin = nil
+	
+	$elect_target = nil
+	$elect_target_index = nil
+	
 end
 
 # Assigns roles to players
 def assign_roles()
-	# The original list of players unmodified
+	# The original list of players unmodified, use for listing and altering indexed values
 	$mafia_players_ordered = $mafia_players.clone
-	# Shuffle the original list to assign roles
+	# The randomized list of players, use for iterating and altering all values instead of one
 	$mafia_players = $mafia_players.shuffle
 	i = 0
 	while i < $mafia_players.length
@@ -36,31 +52,25 @@ def assign_roles_helper(i)
 	when i = 0
 		role = Honoka.new
 		$current_honoka = role
-		puts 'New Honoka created'
 	
 	when i = 1
 		role = Eli.new
 		$current_president = role
-		puts 'New Eli created'
 		
 	when i = 2
 		role = Kotori.new
 		$current_kotori = role
-		puts 'New Kotori created'
 		
 	when i = 3
 		role = Maki.new
 		$current_maki = role
-		puts 'New Maki created'
 		
 	when i = 4
 		role = Rin.new
 		$current_rin = role
-		puts 'New Rin created'
 	
 	else
 		role = N_Card.new
-		puts 'New N Card created'
 		
 	end
 		
@@ -116,9 +126,9 @@ end
 def end_night()
 	
 	i = 0
-	while i < $mafia_players.length
+	while i < $mafia_players_ordered.length
 		
-		if !$mafia_players[i].role.night_action
+		if $mafia_players_ordered[i].alive && !$mafia_players_ordered[i].role.night_action
 			puts 'Waiting for others to make their move'
 			return
 		end
@@ -144,17 +154,31 @@ def reset_night_action()
 
 end
 
-# Resets all players' day_action_elect and day_action_vote
+# Resets all players' day variables
 
 def reset_day_action()
 
 	i = 0
 	
 	while i < $mafia_players.length
+		$mafia_players[i].elect_count = 0
+		$mafia_players[i].vote_count = 0
 		$mafia_players[i].role.day_action_elect = false
 		$mafia_players[i].role.day_action_vote = false
 		i += 1
 	end
+	
+	$abstain_count = 0
+	$everyone_elected = false
+	$everyone_voted = false
+	$elect_tie = true
+	$can_vote = false
+	
+	$elect_target = nil
+	$elect_target_index = nil
+	
+	$vote_yes = 0
+	$vote_no = 0
 
 end
 
@@ -168,12 +192,13 @@ def remove_player(n)
 	when 'Honoka'
 	
 		$current_honoka = nil
-		puts 'Honoka made nil'
 		
 	when 'Eli'
 		
 		# President replacement function here
 		$current_eli = nil
+		# If no replacement, end game
+		$current_president = nil
 	
 	when 'Kotori'
 	
@@ -205,14 +230,14 @@ def president_assign()
 		if !$current_maki.nil?
 		
 			if $current_president.assign_target == $current_maki.help_target
-				message = $president_name + ' assigned homework to ' + $mafia_players_ordered[$current_president.assign_target - 1].name + ', but Maki was there to help!'
+				message = $president_name + ' assigned homework to **' + $mafia_players_ordered[$current_president.assign_target - 1].name + '**, but Maki was there to help!'
 			else
 				remove_player($current_president.assign_target)
-				message = $president_name + ' assigned homework to ' + $mafia_players_ordered[$current_president.assign_target - 1].name + '. They will work on it for the rest of the game!\nMaki was too busy helping ' + $mafia_players_ordered[$current_maki.help_target - 1].name + ' tonight!'
+				message = $president_name + ' assigned homework to ' + $mafia_players_ordered[$current_president.assign_target - 1].name + '**. They will work on it for the rest of the game!\nMaki was too busy helping **' + $mafia_players_ordered[$current_maki.help_target - 1].name + '** tonight!'
 			end
 			
 		else
-			message = $president_name + ' assigned homework to ' + $mafia_players_ordered[$current_president.assign_target - 1].name + '. They will work on it for the rest of the game!'
+			message = $president_name + ' assigned homework to **' + $mafia_players_ordered[$current_president.assign_target - 1].name + '**. They will work on it for the rest of the game!'
 			remove_player($current_president.assign_target)
 		end
 		
@@ -247,31 +272,31 @@ def end_game()
 		while i < $mafia_players_ordered.length
 	
 			if $mafia_players_ordered[i].alive
-				winners = winners + $mafia_players_ordered[i].name + '\n'
+				winners = winners + '**' + $mafia_players_ordered[i].name + ' as ' + $mafia_players_ordered[i].role.name + "**\n"
 			end
 			
 			i += 1
 		
 		end
 		
-		$end_game_message = 'The game is over! Team Idol wins! The winners are:\n' + winners
+		$end_game_message = "The game is over! Team Idol wins! The winners are:\n#{winners}"
 		
 		return true
 		
 	# Check if Team Council Wins (All Idol members were assigned homework)
 	elsif $current_honoka.nil? && $current_kotori.nil? && $current_maki.nil? && $current_rin.nil?
-		puts 'Checking for Council win'
+
 		while i < $mafia_players_ordered.length
 	
 			if $mafia_players_ordered[i].role.name == 'Eli' || $mafia_players_ordered[i].role.name == 'Umi' || $mafia_players_ordered[i].role.name == 'Nozomi'
-				winners = winners + $mafia_players_ordered[i].name + '\n'
+				winners = winners + '**' + $mafia_players_ordered[i].name + "**\n"
 			end
-				
+			
 			i += 1
 		
 		end
 			
-		$end_game_message = 'The game is over! Team Council wins! The winners are:\n' + winners
+		$end_game_message = "The game is over! Team Council wins! The winners are:\n#{winners}"
 			
 		return true
 		
@@ -283,14 +308,116 @@ def end_game()
 	
 end
 
+# Election function
+def elect(n)
+
+	if n == 0
+	
+		$abstain_count += 1
+		return " abstained from electing. Total abstain count: #{$abstain_count}"
+		
+	else
+	
+		$mafia_players_ordered[n - 1].elect_count += 1
+		return " elected **#{$mafia_players_ordered[n - 1].name}**. Total votes for #{$mafia_players_ordered[n - 1].name}: #{$mafia_players_ordered[n - 1].elect_count}"
+	
+	end
+end
+
+# Check that everyone has elected, or that abstain count is majority
+def end_election()
+
+	i = 0
+	while i < $mafia_players_ordered.length
+		
+		if $mafia_players_ordered[i].alive && !$mafia_players_ordered[i].role.day_action_elect
+			return
+		end
+		
+		i += 1
+		
+	end
+	
+	$everyone_elected = true
+	
+end
+
+# Check that everyone has voted
+def end_voting()
+
+	i = 0
+	while i < $mafia_players_ordered.length
+		
+		if $mafia_players_ordered[i].alive && !$mafia_players_ordered[i].role.day_action_vote
+			puts 'Waiting for others to make their move'
+			return
+		end
+		
+		i += 1
+		
+	end
+	
+	$everyone_voted = true
+	
+end
+
+# Check if a majority was reached for election
+def majority_elected()
+
+	if $abstain_count > ($current_players / 2)
+	
+		return false
+	
+	else
+
+		# Find the player with the largest elect_count
+		i = 0
+		current_max = 0
+		
+		
+		while i < $mafia_players_ordered.length
+		
+			if $mafia_players_ordered[i].elect_count >= current_max
+			
+				if $mafia_players_ordered[i].elect_count == current_max
+				
+					$elect_tie = true
+				
+				else
+				
+					$elect_tie = false
+					$elect_target = $mafia_players_ordered[i]
+					$elect_target_index = i + 1
+					current_max = $mafia_players_ordered[i].elect_count
+				
+				end
+			
+			end
+		
+			i += 1
+		
+		end
+		
+		if !$elect_tie
+			return true
+		end
+	
+	end
+
+	return false
+	
+end
+
 # Base class for a player in Mafia
 class Player
 
-	attr_accessor :player, :name, :alive, :role
+	attr_accessor :player, :name, :elect_count, :vote_count, :alive, :role
 
-	def initialize(player)
-		@player = player
+	def initialize(event_user)
+		@player = event_user
 		@name = player.name
+		@elect_count = 0
+		@vote_count = 0
 		@alive = true
 		@role = nil
 	end
@@ -299,7 +426,7 @@ end
 
 class Honoka
 
-	@@help_text = "You are Honoka, the leader of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!honk <Number>` otherwise you `!idle` to progress the game state. If you use it, and you are still in the game during the daytime, the player that you targeted will automatically be elected for the daily homework without requiring a majority vote.\nDuring the daytime, your `!elect` and `!vote` are also worth double. In the event of a tie, your nomination and vote will take precedent."
+	@@help_text = "You are **Honoka**, the leader of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!honk <Number>` otherwise you `!idle` to progress the game state. If you use it, and you are still in the game during the daytime, the player that you targeted will automatically be elected for the daily homework without requiring a majority vote.\nDuring the daytime, your `!vote` is also worth double."
 	
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :honk_target
 
@@ -391,7 +518,7 @@ end
 
 class Kotori
 
-	@@help_text = "You are Kotori, the Cop and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!follow <Number>` each night. If you follow Eli and they assign homework that night, you will catch her during the day and remove her from the game."
+	@@help_text = "You are **Kotori**, the Cop and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!follow <Number>` each night. If you follow Eli and they assign homework that night, you will catch her during the day and remove her from the game."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :follow_target
 
@@ -439,7 +566,7 @@ end
 
 class Maki
 
-	@@help_text = "You are Maki, the Tutor Doctor and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!help < Number>` each night. You can't target the same player twice in a row. You can also target yourself. If your target is also targeted by `!assign` or `!shoot` in the same night, you will save that target from being removed from the game."
+	@@help_text = "You are **Maki**, the Tutor Doctor and a member of Team Idol. You win if you are still in the game when all members of Team Student Council are out of the game.\nYou must `!help < Number>` each night. You can't target the same player twice in a row. You can also target yourself. If your target is also targeted by `!assign` or `!shoot` in the same night, you will save that target from being removed from the game."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :help_target, :last_helped
 
@@ -486,7 +613,7 @@ end
  
 class Rin
 
-	@@help_text = "You are Rin, the Cat Idol and a member of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!nyaa`; otherwise you `!idle` to progress the game state. If you use your ability, you will evade all actions during the daytime and you will discover the identity of anyone that targeted you."
+	@@help_text = "You are **Rin**, the Cat Idol and a member of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!cat`; otherwise you `!idle` to progress the game state. If you use your ability, you will evade all actions during the daytime and you will discover the identity of anyone that targeted you."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :nyaa
 
@@ -495,20 +622,20 @@ class Rin
 		@night_action = false
 		@day_action_elect = false
 		@day_action_vote = false
-		@nyaa = true
+		@cat = true
 	end
 	
 	def help_text()
 		return @@help_text
 	end
 	
-	def nyaa(target)
-		if @nyaa
-			@nyaa = false
+	def cat(target)
+		if @cat
+			@cat = false
 			@night_action = true
 			return 'You decide to become a cat tonight.'
 		else
-			return "You already used your Nyaa this game. Do \"!idle\" to progress the game."
+			return "You already used your Cat this game. Do \"!idle\" to progress the game."
 		end
 	end
 	
