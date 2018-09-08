@@ -83,7 +83,7 @@ def markdown_card(id)
 		while i < 8
 				skill_level[i] = $card_skill_array[i].split(',')
 				skill_level[i][0] = skill_level[i][0].gsub(/[^\d,\.]/, '')
-				skill_level[i][1] = spacing(skill_level[i][2].to_s.gsub(/[^\d,\.]/, ''))
+				skill_level[i][1] = skill_level[i][1].to_s.gsub(/[^\d,\.]/, '')
 				skill_level[i][2] = spacing(skill_level[i][2].to_s.gsub(/[^\d,\.]/, ''))
 				i += 1
 		end
@@ -125,7 +125,7 @@ def markdown_card(id)
 		
 		while i < 8
 				
-			$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][2]}|#{skill_level[i][1]}|\n"
+			$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% | #{skill_level[i][1]}% |#{skill_level[i][2]}|\n"
 			i += 1
 					
 		end
