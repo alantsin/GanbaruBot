@@ -1,6 +1,5 @@
 require 'discordrb'
 require 'json'
-require 'mini_magick'
 require 'nokogiri'
 require 'open-uri'
 
@@ -17,19 +16,25 @@ not_using = true # Prevents concurrent use of !card
 
 get_cards()
 
-$card_count = JSON.parse(open("http://schoolido.lu/api/cards/").read)['count'] # Gets total card count
+$time_last_updated = Time.new.to_i
+
+$card_count = update_max_cards()
 
 # Command to update all members to the dah role
 
-# bot.command :update do |event|
-	# i = 0
-	# while i < event.server.members.length
-		# event.server.members[i].add_role(DEFAULT_ROLE)
-		# puts("Added " + event.server.members[i].name + " to dah role")
-		# sleep(2)
-		# i += 1
-	# end
-# end
+bot.command :update do |event|
+	if event.channel.name == 'umitest'
+	
+		i = 0
+		while i < event.server.members.length
+			event.server.members[i].add_role(DEFAULT_ROLE)
+			puts("Added " + event.server.members[i].name + " to dah role")
+			sleep(2)
+			i += 1
+		end
+		
+	end
+end
 
 bot.member_join do |event|
 	puts event.user.username + " has joined"
@@ -43,7 +48,7 @@ bot.member_leave do |event|
 end
 
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
-	if event.channel.name == 'bot-commands'
+	if event.channel.name == 'bot-commands' || 'umitest'
 
 		if event.user.roles[0].nil?
 			event.user.add_role(DEFAULT_ROLE)
@@ -84,56 +89,45 @@ bot.command :card, description: "[Team-Building-Help] Returns data on a card wit
 		
 			if id.is_a? Integer
 			
-				if (id >= 1 && id <= $card_count)
-			
-					if !special_card(id)
-					
-							begin
+				if (Time.now.to_i - $time_last_updated) > 3600
 				
-								not_using = false
-								
-								id = id.to_s
-
-								openurl(id)
-								
-								# Upload image and delete
-								event.channel.send_file File.new('resized' + $card_id + '.png')
-								File.delete($card_id + '.png') # Delete original
-								File.delete('resized' + $card_id + '.png') # Delete resized
-								
-								sleep(0.5)
-								
-								if !$center_skill.nil?
-									event.respond($markdown_array[0] + $markdown_array[1] + $markdown_array[2] + $markdown_array[3] + $markdown_array[4])
-									event.send_temp('Taking a nap...', 3)
-								
-								else
-									event.respond($markdown_array[0] + $markdown_array[1] + $markdown_array[2])
-									event.send_temp('Taking a nap...', 3)
-									
-								end
-								
-								sleep(3)
-								
-								looking_up = false
-								not_using = true
-								
-								puts ''
-								
-							rescue
-							
-								looking_up = false
-								not_using = true
-								puts ''
-								
-							end
-						
-						
-					else
+					$card_count = update_max_cards()
 					
-						looking_up = false
-						event.respond('Not a valid card number...')
+				end
+			
+				if ((id >= 1) && (id <= $card_count))
+					
+					begin
+				
+						not_using = false
+								
+						id = id.to_s
+
+						output = openurl(id)
+								
+						# Upload image and delete
+						event.channel.send_file File.new($card_id + '.png')
+						File.delete($card_id + '.png') # Delete original
+								
+						sleep(0.5)
+								
+						event.respond(output)
 						
+						event.send_temp('Taking a nap...', 3)
+								
+						sleep(3)
+								
+						looking_up = false
+						not_using = true
+								
+						puts ''
+								
+					rescue
+							
+						looking_up = false
+						not_using = true
+						puts ''
+								
 					end
 					
 				else
@@ -200,15 +194,15 @@ bot.command :solo, description: '[Bot-Commands] Does a solo scout with every car
 	download = open("https:#{image}")
 	IO.copy_stream(download, number + '.png')
 		
-	resized_image = MiniMagick::Image.open(number + '.png')
-	resized_image.resize '100x100'
-	resized_image.format 'png'
-	resized_image.write 'resized' + number + '.png'
+	# resized_image = MiniMagick::Image.open(number + '.png')
+	# resized_image.resize '100x100'
+	# resized_image.format 'png'
+	# resized_image.write 'resized' + number + '.png'
 		
-	event.channel.send_file File.new('resized' + number + '.png')
+	event.channel.send_file File.new(number + '.png')
 		
 	File.delete(number + '.png') # Delete original
-	File.delete('resized' + number + '.png') # Delete resized
+	# File.delete('resized' + number + '.png') # Delete resized
 		 
 	puts '' # To prevent returning text in the Discord chat
 		
@@ -276,7 +270,7 @@ end
 
 bot.command :save, description: '[Sub] [Bot-Commands] Saves an image for your personal use with \"!save URL\" that you can put in chat with \"!emote\". Supports .jpg, .png, and .gif' do |event, link|
 
-	if event.channel.name == 'bot-commands'
+	if event.channel.name == 'bot-commands' || event.channel.name == 'umitest'
 	
 		begin
 		
@@ -308,7 +302,6 @@ bot.command :save, description: '[Sub] [Bot-Commands] Saves an image for your pe
 							if file_count(path) < 1 # If no saved images, save the image
 								download = open(link)
 								extension = link[link.length - 4, link.length]
-								#puts 'image' + extension
 								IO.copy_stream(download, path + 'image' + extension, 9000000)
 								
 								begin
@@ -359,7 +352,7 @@ end
 
 bot.command :delete, description: '[Sub] [Bot-Commands] Deletes your currently saved image if you want to replace it' do |event|
 
-	if event.channel.name == 'bot-commands'
+	if event.channel.name == 'bot-commands' || event.channel.name == 'umitest'
 	
 		begin
 		
@@ -431,13 +424,11 @@ bot.command :huge, description: '[Global] HUGE EMOJI' do |event, hugemoji|
 		prefix = 'https://cdn.discordapp.com/emojis/'
 		suffix = info[2].gsub(/[>]/, '.gif')
 		image = prefix + suffix
-		puts image
 		
 		# Check if image is gif
 		if Net::HTTP.get_response(URI.parse(image)).code == '415'
 			suffix = info[2].gsub(/[>]/, '.png')
 			image = prefix + suffix
-			puts image
 		end
 
 		download = open(image)
@@ -451,7 +442,7 @@ end
 # 3 second countdown to help coordinate simultaneous events
 bot.command :countdown, description: '[Co-op-Room] A 3-second countdown to help coordinate matches' do |event|
 
-	if event.channel.name == 'co-op-room'
+	if event.channel.name == 'co-op-room' || event.channel.name == 'umitest'
   
 		if !name_array.include? event.user.name
 			name_array.push(event.user.name)
