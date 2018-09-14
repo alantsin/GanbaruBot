@@ -91,15 +91,15 @@ def markdown_card(id)
 		# Conditional to check which year and group
 		if skill_details[1].include? 'first-year μ'
 			
-			appeal = "first-year Aqours cards"
+			appeal = "first-year μ's cards"
 			
 		elsif skill_details[1].include? 'second-year μ'
 			
-			appeal = "second-year Aqours cards"
+			appeal = "second-year μ's cards"
 			
 		elsif skill_details[1].include? 'third-year μ'
 			
-			appeal = "third-year Aqours cards"
+			appeal = "third-year μ's cards"
 			
 		elsif skill_details[1].include? 'first-year Aqours'
 			
@@ -183,15 +183,15 @@ def markdown_card(id)
 		# Conditional to check which year and group
 		if skill_details[1].include? 'first-year μ'
 			
-			appeal = "first-year Aqours card"
+			appeal = "first-year μ's card"
 			
 		elsif skill_details[1].include? 'second-year μ'
 			
-			appeal = "second-year Aqours card"
+			appeal = "second-year μ's card"
 			
 		elsif skill_details[1].include? 'third-year μ'
 			
-			appeal = "third-year Aqours card"
+			appeal = "third-year μ's card"
 			
 		elsif skill_details[1].include? 'first-year Aqours'
 			
@@ -465,6 +465,30 @@ def markdown_card(id)
 				$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|#{spacing((skill_level[i][1].to_i * 2.5).to_i.to_s)}|\n"
 				i += 1
 			end
+			
+		when '1350', '1401', '1449'
+			
+		while i < 8
+				skill_level[i] = $card_skill_array[i].split(',')
+				skill_level[i][0] = skill_level[i][0].gsub(/[^\d,\.]/, '')
+				skill_level[i][1] = spacing(skill_level[i][1].to_i.to_s.gsub(/[^\d,\.]/, ''))
+				i += 1
+		end
+			
+		$markdown_array[2] = "**Team-Reliant Score Up:** #{skill_details[0]}, there is a *p* chance of *n* Score Up.\n"
+		
+		$markdown_array[3] = "```scala\n|S.Lv |  p  |  n  |\n===================\n"
+		
+		$markdown_array[4] = ''
+			
+		i = 0
+	
+		while i < 8
+				
+			$markdown_array[4] = $markdown_array[4] + "|  #{i + 1}  | #{skill_level[i][0]}% |#{skill_level[i][1]}|\n"
+			i += 1
+					
+		end
 
 		else
 			

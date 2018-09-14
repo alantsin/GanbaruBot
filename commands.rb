@@ -48,7 +48,7 @@ bot.member_leave do |event|
 end
 
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
-	if event.channel.name == 'bot-commands' || 'umitest'
+	if event.channel.name == 'bot-commands'
 
 		if event.user.roles[0].nil?
 			event.user.add_role(DEFAULT_ROLE)
