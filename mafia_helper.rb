@@ -2,10 +2,9 @@
 def mafia_init()
 
 	$mafia_players = Array.new
+	$mafiaadmin = nil
 	$active_game = false
-	$can_join = true
-	$join_ending = true
-	$max_players = 5
+	$can_join = false
 	$current_players = 0
 	$abstain_count = 0
 	
@@ -38,9 +37,21 @@ def mafia_init()
 	
 end
 
+# Sanity check to prevent idiots
+def sanity_check(input)
+
+	x = $mafia_players_ordered.length - 1
+	if input.to_i.abs == (0..x)
+		return true
+	end
+	return false
+	
+end
+
 # Assigns roles to players
 def assign_roles()
 	# The original list of players unmodified, use for listing and altering indexed values
+	$president_name = 'Eli'
 	$mafia_players_ordered = $mafia_players.clone
 	# The randomized list of players, use for iterating and altering all values instead of one
 	$mafia_players = $mafia_players.shuffle
@@ -54,6 +65,8 @@ def assign_roles()
 		i += 1
 		
 	end
+	
+	$mafia_night_counter = 0
 	
 end
 
@@ -81,19 +94,19 @@ def assign_roles_helper(i)
 		role = Rin.new
 		$current_rin = role
 		
-	when i = 5
+	when i = 50
 		role = Umi.new
 		$current_umi = role
 		
-	when i = 6
+	when i = 60
 		role = Hanayo.new
 		$current_hanayo = role
 		
-	when i = 7
+	when i = 70
 		role = Nozomi.new
 		$current_nozomi = role
 		
-	when i = 8
+	when i = 80
 		role = Nico.new
 		$current_nico = role
 	
@@ -247,6 +260,22 @@ def remove_player(n)
 	when 'Rin'
 	
 		$current_rin = nil
+		
+	when 'Umi'
+	
+		$current_umi = nil
+		
+	when 'Hanayo'
+	
+		$current_hanayo = nil
+		
+	when 'Nozomi'
+	
+		$current_nozomi = nil
+		
+	when 'Nico'
+	
+		$current_nico = nil
 	
 	else
 	
@@ -269,7 +298,7 @@ def president_assign()
 				message = $president_name + ' assigned homework to **' + $mafia_players_ordered[$current_president.assign_target - 1].name + '**, but Maki was there to help!'
 			else
 				remove_player($current_president.assign_target - 1)
-				message = $president_name + ' assigned homework to ' + $mafia_players_ordered[$current_president.assign_target - 1].name + '**. They will work on it for the rest of the game!\nMaki was too busy helping **' + $mafia_players_ordered[$current_maki.help_target - 1].name + '** tonight!'
+				message = $president_name + ' assigned homework to ' + $mafia_players_ordered[$current_president.assign_target - 1].name + "**. They will work on it for the rest of the game!\nMaki was too busy helping " + $mafia_players_ordered[$current_maki.help_target - 1].name + '** tonight!'
 			end
 			
 		else
@@ -475,6 +504,10 @@ def vote_result()
 
 end
 
+# Honoka honks
+
+
+
 # Check if Honoka is alive and has honked
 def honk()
 	if !$current_honoka.nil?
@@ -513,7 +546,7 @@ end
 
 class Honoka
 
-	@@help_text = "You are **Honoka**, the leader of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!honk <Number>` otherwise you `!idle` to progress the game state. If you use it, and you are still in the game during the daytime, the player that you targeted will automatically be elected for the daily homework without requiring a majority vote.\nDuring the daytime, your `!vote` is also worth double."
+	@@help_text = "You are **Honoka**, the leader of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!honk <Number>` otherwise you `!idol` to progress the game state. If you use it, and you are still in the game during the daytime, the player that you targeted will automatically be elected for the daily homework without requiring a majority vote.\nDuring the daytime, your `!vote` is also worth double."
 	
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :honk_target
 
@@ -531,17 +564,25 @@ class Honoka
 	end
 	
 	def honk(target)
-		if @honk
-			@honk = false
-			@night_action = true
-			@honk_target = target
-			return 'You decide to Honk ' + target
+	
+		if sanity_check(target)
+		
+			if @honk
+				@honk = false
+				@night_action = true
+				@honk_target = target
+				return "You decide to honk #{$mafia_players_ordered[target - 1].name}"
+			else
+				return "You already used your Honked this game. Do \"!idol\" to progress the game."
+			end
+			
 		else
-			return "You already used your Honked this game. Do \"!idle\" to progress the game."
+			return "Invalid number"
 		end
+		
 	end
 	
-	def idle()
+	def idol()
 		@honk_target = nil
 		@night_action = true
 		return 'You decide to do nothing tonight.'
@@ -551,7 +592,7 @@ end
 
 class Eli
 
-	@@help_text = "You are Eli, the President of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game. If Nozomi is in the game, you will know her identity at the start of the game.\nYou can `!assign <Number>` each night, or `!idle` to assign homework to nobody. Whoever you target with `!assign` will be removed from the game unless Maki targets the same player that night.\nIf Kotori follows you and you `!assign` homework, she will remove you from the game! In a 6+ player game, Umi or Nozomi will take your place as President if they are still in the game when you are removed."
+	@@help_text = "You are Eli, the President of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game. If Nozomi is in the game, you will know her identity at the start of the game.\nYou can `!assign <Number>` each night, or `!idol` to assign homework to nobody. Whoever you target with `!assign` will be removed from the game unless Maki targets the same player that night.\nIf Kotori follows you and you `!assign` homework, she will remove you from the game! In a 6+ player game, Umi or Nozomi will take your place as President if they are still in the game when you are removed."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :assign_target
 
@@ -568,34 +609,40 @@ class Eli
 	end
 	
 	def assign(target)
-		
-		if $is_morning
-			return 'You can only assign homework at night!'
-			
-		else
 	
-			if $mafia_players_ordered[target - 1].alive
-			
-				if $mafia_players_ordered[target - 1].role.name == $president_name
-					return 'You cannot assign homework to yourself!'
-					
-				else
-					@assign_target = target
-					@night_action = true
-					return "You decide to assign homework to #{$mafia_players_ordered[target - 1].name}"
-					
-				end
-			
+		if sanity_check(target)
+		
+			if $is_morning
+				return 'You can only assign homework at night!'
+				
 			else
-				return 'Not a valid target.'
-			
+		
+				if $mafia_players_ordered[target - 1].alive
+				
+					if $mafia_players_ordered[target - 1].role.name == $president_name
+						return 'You cannot assign homework to yourself!'
+						
+					else
+						@assign_target = target
+						@night_action = true
+						return "You decide to assign homework to #{$mafia_players_ordered[target - 1].name}"
+						
+					end
+				
+				else
+					return 'Not a valid target.'
+				
+				end
+				
 			end
 			
+		else
+			return "Invalid number"
 		end
 		
 	end
 	
-	def idle()
+	def idol()
 		@assign_target = nil
 		@night_action = true
 		return 'You decided to assign homework to nobody tonight.'
@@ -623,28 +670,34 @@ class Kotori
 	
 	def follow(target)
 	
-		if $is_morning
-			return 'You can only follow at night!'
-			
-		else
+		if sanity_check(target)
 	
-			if $mafia_players_ordered[target - 1].alive
-			
-				if $mafia_players_ordered[target - 1].role.name == 'Kotori'
-					return 'You cannot follow yourself!'
-					
-				else
-					@follow_target = target
-					@night_action = true
-					return "You decide to follow #{$mafia_players_ordered[target - 1].name}"
-					
-				end
-			
+			if $is_morning
+				return 'You can only follow at night!'
+				
 			else
-				return 'Not a valid target.'
-			
+		
+				if $mafia_players_ordered[target - 1].alive
+				
+					if $mafia_players_ordered[target - 1].role.name == 'Kotori'
+						return 'You cannot follow yourself!'
+						
+					else
+						@follow_target = target
+						@night_action = true
+						return "You decide to follow #{$mafia_players_ordered[target - 1].name}"
+						
+					end
+				
+				else
+					return 'Not a valid target.'
+				
+				end
+				
 			end
 			
+		else
+			return "Invalid number"
 		end
 		
 	end
@@ -672,26 +725,32 @@ class Maki
 	
 	def help(target)
 	
-		if $is_morning
-			return 'You can only help at night!'
-			
-		else
+		if sanity_check(target)
 	
-			if $mafia_players_ordered[target - 1].alive
-			
-				if target == @last_helped
-					return 'You cannot help the same player two nights in a row!'
-				else
-					@help_target = target
-					@last_helped = target
-					@night_action = true
-					return "You decide to help #{$mafia_players_ordered[target - 1].name}"
-				end
-			
+			if $is_morning
+				return 'You can only help at night!'
+				
 			else
-				return 'Not a valid target.'			
+		
+				if $mafia_players_ordered[target - 1].alive
+				
+					if target == @last_helped
+						return 'You cannot help the same player two nights in a row!'
+					else
+						@help_target = target
+						@last_helped = target
+						@night_action = true
+						return "You decide to help #{$mafia_players_ordered[target - 1].name}"
+					end
+				
+				else
+					return 'Not a valid target.'			
+				end
+				
 			end
 			
+		else
+			return "Invalid number"
 		end
 		
 	end
@@ -700,7 +759,7 @@ end
  
 class Rin
 
-	@@help_text = "You are **Rin**, the Cat Idol and a member of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!cat`; otherwise you `!idle` to progress the game state. If you use your ability, your cat will destroy the daily homework, thus saving anyone that was elected and voted for on the following day. This ability will work even if you are eliminated before the election and voting cycle begins."
+	@@help_text = "You are **Rin**, the Cat Idol and a member of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!cat`; otherwise you `!idol` to progress the game state. If you use your ability, your cat will destroy the daily homework, thus saving anyone that was elected and voted for on the following day. This ability will work even if you are eliminated before the election and voting cycle begins."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :cat
 
@@ -723,11 +782,11 @@ class Rin
 			@night_action = true
 			return 'You send your Cat out tonight to destroy the daily homework.'
 		else
-			return "You already used your Cat this game. Do \"!idle\" to progress the game."
+			return "You already used your Cat this game. Do \"!idol\" to progress the game."
 		end
 	end
 	
-	def idle()
+	def idol()
 		@night_action = true
 		return 'You decide to do nothing tonight.'
 	end
@@ -736,7 +795,7 @@ end
 
 class Umi
 
-	@@help_text = "You are **Umi**, the Archer and a member of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game.\nYou have a one-time use ability `!arrow`; otherwise you `!idle` to progress the game state. Arrow will negate the targetted player's action for the night. If that player used a one-time use ability, they will not be able to use it again.\nIf both Eli and Nozomi are out of the game, you will become the President and gain the ability to `!assign <Number>` each night instead."
+	@@help_text = "You are **Umi**, the Archer and a member of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game.\nYou have a one-time use ability `!arrow`; otherwise you `!idol` to progress the game state. Arrow will negate the targetted player's action for the night. If that player used a one-time use ability, they will not be able to use it again.\nIf both Eli and Nozomi are out of the game, you will become the President and gain the ability to `!assign <Number>` each night instead."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :arrow, :arrow_target, :assign_target
 
@@ -755,14 +814,26 @@ class Umi
 	end
 	
 	def arrow(target)
+	
+		if sanity_check(target)
+		
+		else
+			return "Invalid number"
+		end
 
 	end
 	
 	def assign(target)
+	
+		if sanity_check(target)
+		
+		else
+			return "Invalid number"
+		end
 
 	end
 	
-	def idle()
+	def idol()
 		@night_action = true
 		return 'You decide to do nothing tonight.'
 	end
@@ -788,6 +859,12 @@ class Hanayo
 	end
 	
 	def inspect(target)
+	
+		if sanity_check(target)
+		
+		else
+			return "Invalid number"
+		end
 
 	end
 
@@ -795,7 +872,7 @@ end
 
 class Nozomi
 
-	@@help_text = "You are Nozomi, the Vice President of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game. You will also know the identity of Eli at the start of the game.\nYou can `!washi <Number>` each night, or `!idle` to do nothing. Whoever you target with `!washi` will be unable to elect and vote during the daytime. You cannot target the same player twice.\nIf Eli is eliminated from the game, you will become the new President and gain the ability to `!assign <Number>` instead."
+	@@help_text = "You are Nozomi, the Vice President of Team Student Council. You win if there is still a Student Council member in the game when all members of Team Idol are out of the game. You will also know the identity of Eli at the start of the game.\nYou can `!washi <Number>` each night, or `!idol` to do nothing. Whoever you target with `!washi` will be unable to elect and vote during the daytime. You cannot target the same player twice.\nIf Eli is eliminated from the game, you will become the new President and gain the ability to `!assign <Number>` instead."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :washi_target, :assign_target
 
@@ -813,14 +890,26 @@ class Nozomi
 	end
 	
 	def washi(target)
+	
+		if sanity_check(target)
+		
+		else
+			return "Invalid number"
+		end
 		
 	end
 	
 	def assign(target)
+	
+		if sanity_check(target)
+		
+		else
+			return "Invalid number"
+		end
 
 	end
 	
-	def idle()
+	def idol()
 		@assign_target = nil
 		@night_action = true
 		return 'You decided to assign homework to nobody tonight.'
@@ -830,7 +919,7 @@ end
 
 class Nico
 
-	@@help_text = "You are **Nico**, the Charmer and a member of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!charm <Number>`; otherwise you `!idle` to progress the game state. Whoever you Charm will have their night action target randomized. If you Charm Rin, you will instead release a Cat to destroy the daily homework, even if she already used her Cat previously."
+	@@help_text = "You are **Nico**, the Charmer and a member of Team Idol. You win if you are still in the game when all members of the Student Council are out of the game.\nYou have a one-time use ability `!charm <Number>`; otherwise you `!idol` to progress the game state. Whoever you Charm will have their night action target randomized. If you choose a target with no night action, the charm will fail but it won't take up your one use."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote, :charm_target
 
@@ -847,6 +936,12 @@ class Nico
 	end
 	
 	def charm(target)
+	
+		if sanity_check(target)
+		
+		else
+			return "Invalid number"
+		end
 
 	end
 
@@ -854,7 +949,7 @@ end
 
 class N_Card
 
-	@@help_text = "You are an N Card. You have no abilities that you can use. You must !idle` every night to progress the game state."
+	@@help_text = "You are an N Card. You have no abilities that you can use. You must !idol` every night to progress the game state."
 
 	attr_accessor :name, :night_action, :day_action_elect, :day_action_vote
 
@@ -865,7 +960,7 @@ class N_Card
 		@day_action_vote = false
 	end
 	
-	def idle()
+	def idol()
 		@night_action = true
 		return 'You decide to do nothing tonight.'
 	end
