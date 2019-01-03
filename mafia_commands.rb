@@ -412,8 +412,9 @@ bot.command :elect do |event, target|
 						
 								# Check that player number is valid
 								begin
-									target = target.to_i
-									if target >= 0 && target <= $mafia_players_ordered.length
+									target = Integer target rescue nil
+
+									if !target.nil? && target >= 0 && target <= $mafia_players_ordered.length
 											
 										event.respond($mafia_players[i].name + elect(target))
 										$mafia_players[i].role.day_action_elect = true
@@ -540,8 +541,8 @@ bot.command :honk do |event, target|
 							if $mafia_players[i].role.name == 'Honoka'
 								# Check that player number is valid
 								begin
-									target = target.to_i
-									if target > 0 && target <= $mafia_players_ordered.length
+									target = Integer target rescue nil
+									if !target.nil? && target > 0 && target <= $mafia_players_ordered.length
 										event.respond($mafia_players[i].role.honk(target))
 										end_night()
 									else
@@ -608,8 +609,8 @@ bot.command :assign do |event, target|
 							if $mafia_players[i].role.name == $president_name
 								# Check that player number is valid
 								begin
-									target = target.to_i
-									if target > 0 && target <= $mafia_players_ordered.length
+									target = Integer target rescue nil
+									if !target.nil? && target > 0 && target <= $mafia_players_ordered.length
 										event.respond($mafia_players[i].role.assign(target))
 										end_night()
 									else
@@ -676,8 +677,8 @@ bot.command :follow do |event, target|
 							if $mafia_players[i].role.name == 'Kotori'
 								# Check that player number is valid
 								begin
-									target = target.to_i
-									if target > 0 && target <= $mafia_players_ordered.length
+									target = Integer target rescue nil
+									if !target.nil? && target > 0 && target <= $mafia_players_ordered.length
 										event.respond($mafia_players[i].role.follow(target))
 										end_night()
 									else
@@ -744,8 +745,8 @@ bot.command :help do |event, target|
 							if $mafia_players[i].role.name == 'Maki'
 								# Check that player number is valid
 								begin
-									target = target.to_i
-									if target > 0 && target <= $mafia_players_ordered.length
+									target = Integer target rescue nil
+									if !target.nil? && target > 0 && target <= $mafia_players_ordered.length
 										event.respond($mafia_players[i].role.help(target))
 										end_night()
 									else
