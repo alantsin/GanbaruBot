@@ -40,14 +40,22 @@ bot.command :update do |event|
 end
 
 bot.member_join do |event|
+
 	puts event.user.username + " has joined"
+
+	if event.user.id  == DSZ
+		event.user.add_role(TOXIC_ROLE)
+		bot.send_message(GENERAL_CHANNEL, "It just got a lot more toxic in here...")
+	
+	else
 		event.user.add_role(DEFAULT_ROLE)
-		bot.send_message(TEST_CHANNEL, event.user.username + " has joined and became a dahDUM")
+		bot.send_message(TEST_CHANNEL, event.user.username + " has joined.")
+	end
+	
 end
 
 bot.member_leave do |event|
-	puts event.user.username + " has left"
-	bot.send_message(TEST_CHANNEL, event.user.username + " has left and became a :dahUMD:")
+	bot.send_message(TEST_CHANNEL, event.user.username + " has left.")
 end
 
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
