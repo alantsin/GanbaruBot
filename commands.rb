@@ -41,15 +41,19 @@ end
 
 bot.member_join do |event|
 
-	puts event.user.username + " has joined"
-
-	if event.user.id  == DSZ
+	if event.user.id == DSZ
 		event.user.add_role(TOXIC_ROLE)
-		bot.send_message(GENERAL_CHANNEL, "It just got a lot more toxic in here...")
-	
-	else
+		bot.send_message(TEST_CHANNEL, "WARNING")
+		return
+	end
+
+	begin
+		event.user.pm("Welcome to Umidah's server!\n\nFriendly reminder to read the #welcome channel since there's a 99% chance you're only here for global emotes.\n\nThere will be frequent pings from the #live-on-twitch channel, so read #actually-important-stuff for ways to get rid of it.\n\nAnyone that complains about the pings will be branded with the **Baka** role and have their global emote permissions removed.")
 		event.user.add_role(DEFAULT_ROLE)
 		bot.send_message(TEST_CHANNEL, event.user.username + " has joined.")
+	rescue
+		event.user.add_role(TOXIC_ROLE)
+		bot.send_message(TEST_CHANNEL, "It just got a lot more toxic in here...")
 	end
 	
 end
@@ -60,9 +64,21 @@ end
 
 bot.command :dah, description: "Command to request the dah role if not automatically assigned to you when you joined" do |event|
 	if event.channel.name == 'bot-commands'
+	
+		if event.user.id == DSZ
+			event.user.add_role(SPAM_ROLE)
+			event.respond('No')
+			return
+		end
 
 		if event.user.roles[0].nil?
-			event.user.add_role(DEFAULT_ROLE)
+		
+			begin
+				event.user.pm('You are now a dah!')
+				event.user.add_role(DEFAULT_ROLE)
+			rescue
+				event.user.add_role(TOXIC_ROLE)
+			end	
 			
 		else
 		
@@ -79,9 +95,18 @@ bot.command :dah, description: "Command to request the dah role if not automatic
 			end
 			
 			if dah
-				event.respond("Y-you're already a dah...")
+			
+				event.user.pm("Y-you're already a dah...")
+				
 			else
-				event.user.add_role(DEFAULT_ROLE)
+			
+				begin
+					event.user.pm('You are now a dah!')
+					event.user.add_role(DEFAULT_ROLE)
+				rescue
+					event.user.add_role(TOXIC_ROLE)
+				end	
+				
 			end
 			
 		end
