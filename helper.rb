@@ -912,15 +912,15 @@ def extract_data(data, id)
 	
 	$card_max_level = data[2].gsub(/\D/, '')
 	
-	$card_max_bond = data[3].gsub(/\D/, '')
+	$card_max_bond = data[6].gsub(/\D/, '')
 	
-	$card_level_array = data[5].split('],')
+	$card_level_array = data[3].split('],')
 
-	if data[4].include? 'null'
+	if data[7].include? 'null'
 		$card_skill_array = nil
 		
 	else
-		$card_skill_array = data[6].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
+		$card_skill_array = data[7].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
 	end
 	
 	output = markdown_card(id)
