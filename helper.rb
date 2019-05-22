@@ -908,19 +908,21 @@ end
 # Helper method to extract data from the url into global variables
 def extract_data(data, id)
 
+	# puts data
+
 	$card_id = data[0].gsub(/\D/, '') # Use $card_id to upload image
 	
-	$card_max_level = data[2].gsub(/\D/, '')
+	$card_max_level = data[4].gsub(/\D/, '')
 	
-	$card_max_bond = data[6].gsub(/\D/, '')
+	$card_max_bond = data[2].gsub(/\D/, '')
 	
-	$card_level_array = data[3].split('],')
+	$card_level_array = data[7].split('],')
 
-	if data[7].include? 'null'
+	if data[3].include? 'null'
 		$card_skill_array = nil
 		
 	else
-		$card_skill_array = data[7].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
+		$card_skill_array = data[3].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
 	end
 	
 	output = markdown_card(id)
