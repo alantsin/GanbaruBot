@@ -910,25 +910,49 @@ def extract_data(data, id)
 
 	# puts data
 
-	$card_id = data[0].gsub(/\D/, '') # Use $card_id to upload image
+	$card_id = data[extract_helper(data, 'document.precalc')].gsub(/\D/, '') # Use $card_id to upload image
 	
-	$card_max_level = data[4].gsub(/\D/, '')
+	$card_max_level = data[extract_helper(data, '"skill"')].gsub(/\D/, '')
 	
-	$card_max_bond = data[2].gsub(/\D/, '')
+	$card_max_bond = data[extract_helper(data, 'stats')].gsub(/\D/, '')
 	
-	$card_level_array = data[7].split('],')
+	$card_level_array = data[extract_helper(data, 'cid')].split('],')
+	
+	skill_index = extract_helper(data, 'skill_level_max')
 
-	if data[3].include? 'null'
+	if data[skill_index].include? 'null'
 		$card_skill_array = nil
 		
 	else
-		$card_skill_array = data[3].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
+		$card_skill_array = data[skill_index].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
 	end
 	
 	output = markdown_card(id)
 	
 	return output
 	
+end
+
+# Determines index of data
+
+def extract_helper(data, s)
+
+	i = 0
+
+	while i < data.length
+	
+		if data[i].include? s
+			return i
+		end
+	
+		i+= 1
+	
+	end
+	
+	puts 'Reached end of extract_helper without finding index error'
+	
+	return i
+
 end
 
 # Helper method to determine card id
