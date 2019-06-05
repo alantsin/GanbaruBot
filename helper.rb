@@ -678,7 +678,7 @@ def markdown_card(id)
 			
 		case id
 			
-		when '90', '107', '162', '182', '206', '1350', '1401', '1449', '1838'
+		when '90', '107', '162', '182', '206', '1350', '1401', '1449', '1838', '2051'
 			
 			$markdown_array[2] = "**Unique Score Up Skill:** #{skill_details[0]}, there is a *p* chance of *n* Score Up.\n"
 				
@@ -908,17 +908,17 @@ end
 # Helper method to extract data from the url into global variables
 def extract_data(data, id)
 
-	# puts data
+	#puts data
 
 	$card_id = data[extract_helper(data, 'document.precalc')].gsub(/\D/, '') # Use $card_id to upload image
 	
-	$card_max_level = data[extract_helper(data, '"skill"')].gsub(/\D/, '')
+	$card_max_level = data[extract_helper(data, 'skill_level_max')].gsub(/\D/, '')
 	
-	$card_max_bond = data[extract_helper(data, 'stats')].gsub(/\D/, '')
+	$card_max_bond = data[extract_helper(data, 'level_max')].gsub(/\D/, '')
 	
-	$card_level_array = data[extract_helper(data, 'cid')].split('],')
+	$card_level_array = data[extract_helper(data, '"skill"')].split('],')
 	
-	skill_index = extract_helper(data, 'skill_level_max')
+	skill_index = extract_helper(data, 'kizuna_max')
 
 	if data[skill_index].include? 'null'
 		$card_skill_array = nil
