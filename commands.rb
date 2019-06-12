@@ -128,9 +128,9 @@ bot.command :card, description: "[Team-Building-Help] Returns data on a card wit
 							
 						end
 								
-						id = id.to_s
+						$card_id = id.to_s
 
-						output = openurl(id)
+						output = markdown_card()
 								
 						# Upload image and delete
 						event.channel.send_file File.new($card_id + '.png')
@@ -467,28 +467,24 @@ bot.command :huge, description: '[Global] HUGE EMOJI' do |event, hugemoji|
 end
 
 # 3 second countdown to help coordinate simultaneous events
-bot.command :countdown, description: '[Co-op-Room] A 3-second countdown to help coordinate matches' do |event|
-
-	if event.channel.name == 'co-op-room' || event.channel.name == 'umitest'
+bot.command :countdown, description: 'A 3-second countdown to help coordinate matches' do |event|
   
-		if !name_array.include? event.user.name
-			name_array.push(event.user.name)
-			event.respond 'Get GanbaReady!'
-			sleep(1)
-			event.respond "3 [#{event.user.name}]"
-			sleep(1)
-			event.respond "2 [#{event.user.name}]"
-			sleep(1)
-			event.respond "1 [#{event.user.name}]"
-			sleep(1)
-			name_array.delete(event.user.name)
-			event.respond 'ピギィーーーーッッッ！！！'
+	if !name_array.include? event.user.name
+		name_array.push(event.user.name)
+		event.respond 'Get GanbaReady!'
+		sleep(1)
+		event.respond "3 [#{event.user.name}]"
+		sleep(1)
+		event.respond "2 [#{event.user.name}]"
+		sleep(1)
+		event.respond "1 [#{event.user.name}]"
+		sleep(1)
+		name_array.delete(event.user.name)
+		event.respond 'ピギィーーーーッッッ！！！'
 			
-		else
-			event.user.pm('Y-you should wait until your existing countdown is finished...')
+	else
+		event.user.pm('Y-you should wait until your existing countdown is finished...')
 			
-		end
-   
 	end
   
 end
