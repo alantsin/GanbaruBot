@@ -57,6 +57,8 @@ def markdown_card()
 		
 	end
 	
+	extract_data()
+	
 	max_smile = obj['idolized_maximum_statistics_smile'].to_s
 	max_pure = obj['idolized_maximum_statistics_pure'].to_s
 	max_cool = obj['idolized_maximum_statistics_cool'].to_s
@@ -90,8 +92,6 @@ def markdown_card()
 	end
 	
 	# Prepare data
-	
-	extract_data()
 	
 	skill_level = Array.new(16)
 	
