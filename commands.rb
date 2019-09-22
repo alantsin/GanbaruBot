@@ -130,7 +130,7 @@ bot.command :card, description: "[Team-Building-Help] Returns data on a card wit
 								
 						$card_id = id.to_s
 
-						output = markdown_card()
+						output = openurl($card_id)
 								
 						# Upload image and delete
 						event.channel.send_file File.new($card_id + '.png')

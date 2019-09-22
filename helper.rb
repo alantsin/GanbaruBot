@@ -30,7 +30,7 @@ end
 
 # Helper method to display the data nicely
 
-def markdown_card()
+def markdown_card(id)
 
 	url = 'https://schoolido.lu/api/cards/' + $card_id + '/'
 	
@@ -41,8 +41,6 @@ def markdown_card()
 	IO.copy_stream(download, $card_id + '.png')
 	
 	rarity = obj['rarity'].to_s
-	
-	card_max_level = obj['idolized_max_level'].to_s
 
 	case rarity
 	
@@ -57,21 +55,17 @@ def markdown_card()
 		
 	end
 	
-	extract_data()
-	
-	max_smile = obj['idolized_maximum_statistics_smile'].to_s
-	max_pure = obj['idolized_maximum_statistics_pure'].to_s
-	max_cool = obj['idolized_maximum_statistics_cool'].to_s
-	
 	$markdown_array = Array.new(7)
 		
-	$markdown_array[1] = "```scala\nStats at max level #{card_max_level}:\nSmile: #{max_smile}\nPure:  #{max_pure}\nCool:  #{max_cool}\n```\n"
-	
-	if ((SKILL_EXPERIENCE.include? $card_id) || (PRACTICE_EXPERIENCE.include? $card_id))
+	max_stats = $card_level_array[$card_level_array.length - 2].split(',')
 		
-		return special_cards($card_id, obj)
+	$markdown_array[1] = "```scala\nStats at max level #{$card_max_level}:\nSmile: #{max_stats[0].gsub(/\D/, '')}\nPure:  #{max_stats[1].gsub(/\D/, '')}\nCool:  #{max_stats[2].gsub(/\D/, '')}\n```\n"
 	
-	elsif rarity == 'N' # N card
+	if ((SKILL_EXPERIENCE.include? id) || (PRACTICE_EXPERIENCE.include? id))
+		
+		return special_cards(id, obj)
+	
+	elsif $card_skill_array.nil? # N card
 		
 		$markdown_array[0] = "**Data for Card:** \[#{$card_id}\] #{obj['idol']['name'].to_s} #{obj['translated_collection'].to_s} \n**Center Skill:** N/A\n"
 		
@@ -682,9 +676,9 @@ def markdown_card()
 			
 		i = 0
 			
-		case $card_id
+		case id
 			
-		when '90', '107', '162', '182', '206', '1350', '1401', '1449', '1838', '2051'
+		when '90', '107', '162', '182', '206', '1350', '1401', '1449', '1838'
 			
 			$markdown_array[2] = "**Unique Score Up Skill:** #{skill_details[0]}, there is a *p* chance of *n* Score Up.\n"
 				
@@ -898,74 +892,69 @@ def special_cards(id, obj)
 end
 
 # Helper method to open the url to the data
-def openurl()
-
-	document = open('https://sif.kirara.ca/card/' + $card_id)
+def openurl(id)
+	
+	document = open('https://sif.kirara.ca/card/' + id)
 	content = document.read
 	$parsed_content = Nokogiri::HTML(content)
-	$center_skill = $parsed_content.css('div.description')[1].inner_text
+	$center_skill = $parsed_content.css('div.content')[3].inner_text.gsub("\n", '')
 	data = $parsed_content.css('script').children.first.inner_text.split(':') # Now a string
+	output = extract_data(data, id)
 	
-	return data
+	return output
 	
 end
 
 # Helper method to extract data from the url into global variables
-def extract_data()
+def extract_data(data, id)
 
-	data = openurl()
-
-	$card_skill_array = data[extract_helper(data)].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
+	# puts data
 	
-	return
+	#puts "In Extract"
+
+	#$card_id = data[extract_helper(data, 'document.precalc')].gsub(/\D/, '') # Use $card_id to upload image
+	
+	$card_max_level = data[extract_helper(data, '"kizuna_max"')].gsub(/\D/, '')
+	
+	$card_max_bond = data[extract_helper(data, 'skill_level_max')].gsub(/\D/, '')
+	
+	$card_level_array = data[extract_helper(data, "\"skill\"")].split('],')
+	
+	skill_index = extract_helper(data, 'cid')
+
+	if data[skill_index].include? 'null'
+		$card_skill_array = nil
+		
+	else
+		$card_skill_array = data[skill_index].split('],') # Split percentage and value with .gsub(/[^\d,\.]/, '')
+	end
+	
+	output = markdown_card(id)
+	
+	return output
 	
 end
 
 # Determines index of data
 
-def extract_helper(data)
+def extract_helper(data, s)
 
 	i = 0
-	
-	longest = ''
-	
-	longest_index = 0
-	
+
 	while i < data.length
 	
-		if data[i].length > longest.length
-		
-			longest = data[i]
-			longest_index = i
-		
+		if data[i].include? s
+			#puts i
+			return i
 		end
-		
-		i += 1
-
+	
+		i+= 1
+	
 	end
 	
-	data.delete_at(longest_index)
+	puts 'Reached end of extract_helper without finding index error'
 	
-	i = 0
-	
-	longest = ''
-	
-	longest_index = 0
-	
-	while i < data.length
-	
-		if data[i].length > longest.length
-		
-			longest = data[i]
-			longest_index = i
-		
-		end
-		
-		i += 1
-
-	end
-	
-	return longest_index
+	return i
 
 end
 
@@ -1057,7 +1046,7 @@ def get_cards()
 	rarity_array = content.split('<h2>')
 	
 	$n_array = rarity_array[1].split('<td class="ar">#')
-	#puts n_array[2] # First card for N is at index 2
+	#puts $n_array[2] # First card for N is at index 2
 	
 	$r_array = rarity_array[2].split('<td class="ar">#')
 	
@@ -1067,7 +1056,7 @@ def get_cards()
 	
 	$ur_array = rarity_array[5].split('<td class="ar">#')
 
-	#puts ur_array[ur_array.length - 1]
+	#puts $ur_array[$ur_array.length - 1]
 	
 end
 
