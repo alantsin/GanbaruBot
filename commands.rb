@@ -41,9 +41,9 @@ bot.member_join do |event|
 	begin
 		event.user.pm("Welcome to Umidah's server!\n\nFriendly reminder to read the #welcome channel since there's a 99% chance you're only here for global emotes.\n\nThere will be frequent pings from the #live-on-twitch channel, so read #actually-important-stuff for ways to get rid of it.\n\nAnyone that complains about the pings will be branded with the **Baka** role and have their global emote permissions removed.")
 		event.user.add_role(DEFAULT_ROLE)
-		bot.send_message(TEST_CHANNEL, event.user.username + " has joined.")
+		bot.send_message(TEST_CHANNEL, event.user.username + " was made a dah")
 	rescue
-		event.user.add_role(TOXIC_ROLE)
+		event.user.add_role(BLOCKED_ROLE)
 		bot.send_message(TEST_CHANNEL, "It just got a lot more toxic in here...")
 	end
 	
@@ -62,7 +62,7 @@ bot.command :dah, description: "Command to request the dah role if not automatic
 				event.user.pm('You are now a dah!')
 				event.user.add_role(DEFAULT_ROLE)
 			rescue
-				event.user.add_role(TOXIC_ROLE)
+				event.respond('Enable DMs to be granted the role.')
 			end	
 			
 		else
@@ -89,7 +89,7 @@ bot.command :dah, description: "Command to request the dah role if not automatic
 					event.user.pm('You are now a dah!')
 					event.user.add_role(DEFAULT_ROLE)
 				rescue
-					event.user.add_role(TOXIC_ROLE)
+					event.respond('Enable DMs to be granted the role.')
 				end	
 				
 			end
@@ -98,6 +98,69 @@ bot.command :dah, description: "Command to request the dah role if not automatic
 		
 	end
 	
+end
+
+bot.command :role, description: "[Bot-Commands] Used to assign different roles for channel access. Accepts the words 'Chat', 'Gacha', 'Bored', and 'Weeb' for the input. If you want full access, use 'All' as input." do |event, id|
+ 
+ 
+	if event.channel.name == 'bot-commands' || event.channel.name == 'umitest'
+	
+		if id.downcase == 'chat'
+		
+			begin
+				event.user.pm('You now have access to the Chat channels.')
+				event.user.add_role(CHAT_ROLE)
+			rescue
+				event.respond('Enable DMs to be granted the role.')
+			end
+			 
+		elsif id.downcase == 'gacha'
+
+			begin
+				event.user.pm('You now have access to the Gacha channels.')
+				event.user.add_role(GACHA_ROLE)
+			rescue
+				event.respond('Enable DMs to be granted the role.')
+			end
+			 
+		elsif id.downcase == 'bored'
+
+			begin
+				event.user.pm('You now have access to the Bored channels.')
+				event.user.add_role(BORED_ROLE)
+			rescue
+				event.respond('Enable DMs to be granted the role.')
+			end
+			 
+		elsif id.downcase == 'weeb'
+
+			begin
+				event.user.pm('You now have access to the Weeb channels.')
+				event.user.add_role(WEEB_ROLE)
+			rescue
+				event.respond('Enable DMs to be granted the role.')
+			end
+
+		elsif id.downcase == 'all'
+
+			begin
+				event.user.pm('You now have access to the all the free-to-play channels.')
+				event.user.add_role(CHAT_ROLE)
+				event.user.add_role(GACHA_ROLE)
+				event.user.add_role(BORED_ROLE)
+				event.user.add_role(WEEB_ROLE)
+			rescue
+				event.respond('Enable DMs to be granted the role.')
+			end
+			 
+		else
+
+			event.respond('Not a valid role...')
+			 
+		end
+		
+	end
+ 
 end
 
 bot.command :card, description: "[Team-Building-Help] Returns data on a card with `!card` *id*. Does not work with special cards. Can only look up one card at a time." do |event, id|
